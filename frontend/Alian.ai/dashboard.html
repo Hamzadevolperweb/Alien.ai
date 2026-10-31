@@ -181,7 +181,7 @@ const api={
   async request(path,options={}){const s=window.AlienDemoAuth.getSession();const h=new Headers(options.headers||{});if(s?.access_token)h.set("Authorization","Bearer "+s.access_token);if(options.body&&!(options.body instanceof FormData))h.set("Content-Type","application/json");const r=await fetch(CONFIG.API_BASE+path,{...options,headers:h});const b=await r.json().catch(()=>null);if(!r.ok)throw new Error(b?.error?.message||`Request failed (${r.status})`);return b?.data},
   async uploadMedia(file){const fd=new FormData();fd.append("file",file);return this.request("/uploads",{method:"POST",body:fd})},
   async fetchAssets(){return []},
-  async submitGeneration(req){const image=req.mode==="image";const result=await this.request(image?"/generations/image":"/generations/video",{method:"POST",body:JSON.stringify(image?{prompt:req.prompt,size:req.aspectRatio==="1:1"?"1024x1024":"auto"}:{prompt:req.prompt,ratio:req.aspectRatio==="9:16"?"720:1280":"1280:720",duration:[5,10].includes(req.durationSeconds)?req.durationSeconds:5})});return{jobId:result.id,data:result}},
+  async submitGeneration(req){const image=req.mode==="image";const duration=req.durationSeconds<=7?5:10;const result=await this.request(image?"/generations/image":"/generations/video",{method:"POST",body:JSON.stringify(image?{prompt:req.prompt,size:req.aspectRatio==="1:1"?"1024x1024":"auto"}:{prompt:req.prompt,ratio:req.aspectRatio==="9:16"?"720:1280":"1280:720",duration})});return{jobId:result.id,data:result}},
   async getResult(jobId){return this.request("/generations/"+encodeURIComponent(jobId))}
 };
 /* ============ 3. STATE ============ */
@@ -300,6 +300,9 @@ $('#comp').onsubmit=async e=>{e.preventDefault();if(S.busy)return;
   S.busy=true;$('#go').disabled=true;renderWs();
   try{const r=await api.submitGeneration(req);o.pending=false;o.jobId=r?.jobId;o.status=r?.data?.status||'submitted';o.type=req.mode;
     if(o.status==='completed'&&r.data.output_media_path){const media=await api.request('/media/'+encodeURIComponent(r.data.output_media_path));o.url=media.signed_url}
+    else if(o.status==='completed'&&r.data.output_url){o.url=r.data.output_url}
+    const poll=async()=>{if(!o.jobId||o.status==='completed'||o.status==='failed')return;try{const result=await api.getResult(o.jobId);o.status=result.status;o.type=req.mode;if(result.output_media_path){const media=await api.request('/media/'+encodeURIComponent(result.output_media_path));o.url=media.signed_url}else if(result.output_url){o.url=result.output_url}renderWs();if(['queued','processing'].includes(result.status))setTimeout(poll,3000)}catch(err){er.textContent='Could not refresh generation status: '+err.message}};
+    if(['queued','processing'].includes(o.status))setTimeout(poll,3000);
     toast('Generation submitted successfully.')}
   catch(err){o.pending=false;await new Promise(r=>setTimeout(r,500));
     S.outputs=S.outputs.filter(x=>x!==o);er.textContent='Generation failed: '+err.message}

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { ApiError } from "./errors.js";
 
 export const config = {
   port: Number(process.env.PORT ?? 4000),
@@ -19,6 +20,6 @@ export const config = {
 
 export function requireSupabaseConfig(): void {
   if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
-    throw new Error("SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) must be configured.");
+    throw new ApiError(503, "CONFIGURATION_ERROR", "SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) must be configured.");
   }
 }
