@@ -1,0 +1,54 @@
+{
+  "info": {
+    "name": "Alien.ai Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Current User",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/me",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+      }
+    },
+    {
+      "name": "Create Image",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/generations/image",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prompt\": \"A glass house in a rainy forest\",\n  \"size\": \"1024x1024\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Create Video",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/generations/video",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prompt\": \"A cinematic drone shot over a neon city\",\n  \"ratio\": \"1280:720\",\n  \"duration\": 5\n}"
+        }
+      }
+    }
+  ]
+}
