@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alien.ai – Create</title>
+<style>
+/* Tokens copied from the Alien.ai homepage (index.html) */
+:root{--bg:#07060d;--bg2:#100d1c;--card:#14111f;--line:rgba(255,255,255,.09);--tx:#f4f2fb;--mu:#a29cb8;--ac:#7c5cff;--ac2:#22e6a8;--grad:linear-gradient(135deg,#7c5cff,#b05cff)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Inter,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.app{display:grid;grid-template-columns:240px 1fr;height:100dvh;padding-top:env(safe-area-inset-top,0)}
+/* sidebar */
+aside{padding:18px 14px;border-right:1px solid var(--line);background:linear-gradient(180deg,#0b0916,var(--bg))}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;padding:4px 10px 22px}
+.logo-mark{width:30px;height:30px;flex:none;filter:drop-shadow(0 3px 8px rgba(124,92,255,.35))}
+.nav{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:14px;background:rgba(124,92,255,.16);border:1px solid rgba(124,92,255,.35);font-weight:600}
+/* main */
+main{display:flex;flex-direction:column;min-width:0;position:relative}
+.top{height:64px;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:0 20px}
+.top .logo{display:none;padding:0;margin-right:auto}
+.plus{padding:4px 12px;border-radius:10px;background:rgba(255,255,255,.07);font-size:12px;font-weight:700;letter-spacing:.5px}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--grad);border:2px solid var(--ac2)}
+.ib{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;transition:background .2s}.ib:hover{background:rgba(255,255,255,.08)}
+.menu{position:absolute;top:56px;right:20px;min-width:210px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:30;opacity:0;visibility:hidden;transform:translateY(6px);transition:.2s}
+.menu.on{opacity:1;visibility:visible;transform:none}
+.menu a,.menu button{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;color:var(--mu);text-decoration:none;font-size:14px}.menu a:hover,.menu button:hover{background:rgba(124,92,255,.16);color:var(--tx)}
+/* workspace */
+.ws{flex:1;overflow:auto;padding:10px 24px 24px;position:relative}
+.ws.drag:after{content:"Drop media to add it";position:absolute;inset:8px;border:2px dashed var(--ac);border-radius:24px;background:rgba(124,92,255,.12);display:grid;place-items:center;font-size:18px;z-index:5}
+.empty{height:100%;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:var(--mu);font-size:22px;text-align:center}
+.empty svg{width:72px;height:72px;fill:var(--tx);stroke:none;animation:bob 4s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-8px)}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.it{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;animation:pop .3s;position:relative}
+@keyframes pop{from{opacity:0;transform:scale(.96)}}
+.it .th{display:grid;place-items:center;color:var(--mu);font-size:13px;text-align:center;padding:10px;background:repeating-linear-gradient(45deg,#17132a,#17132a 12px,#1c1733 12px,#1c1733 24px);width:100%;object-fit:cover}
+.it .bd{padding:12px 14px;font-size:13px}.it .bd p{color:var(--tx);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mu);margin:0 4px 4px 0}.tag.w{color:var(--ac2);border-color:rgba(34,230,168,.4)}
+.it .rm{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6)}
+.spin{display:grid;place-items:center;aspect-ratio:16/9;background:var(--card)}
+.spin i{width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--ac2);animation:sp .8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.foot{position:absolute;left:18px;bottom:10px;font-size:12px;color:var(--mu);pointer-events:none}
+/* composer */
+.cw{position:relative;width:min(640px,calc(100% - 28px));margin:0 auto 34px}
+.comp{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:14px 14px 12px;transition:border-color .2s,box-shadow .2s}
+.comp:focus-within{border-color:rgba(124,92,255,.7);box-shadow:0 0 0 4px rgba(124,92,255,.14)}
+.comp textarea{width:100%;background:none;border:0;color:var(--tx);font:inherit;resize:none;max-height:180px;min-height:28px;padding:2px 6px;outline:0}
+.att{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ch{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:12px;background:rgba(255,255,255,.07);font-size:12px;animation:pop .25s;max-width:180px}
+.ch .t{width:34px;height:34px;border-radius:9px;flex:none;background-size:cover;background-position:center;display:grid;place-items:center}
+.ch span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ch button{opacity:.7}.ch button:hover{opacity:1}
+.bar{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pill{height:38px;padding:0 14px;border-radius:99px;background:rgba(255,255,255,.07);display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;transition:background .2s}.pill:hover{background:rgba(255,255,255,.13)}
+.pill.circ{width:38px;padding:0;justify-content:center}
+.pill.on{background:rgba(124,92,255,.3);color:#fff}
+.sum{margin-left:auto;max-width:100%;overflow:hidden;white-space:nowrap;font-weight:500;font-size:13px}
+.send{width:38px;height:38px;border-radius:50%;background:var(--grad);display:grid;place-items:center;box-shadow:0 6px 20px -6px var(--ac);transition:transform .2s}.send:hover:not(:disabled){transform:scale(1.08)}
+.err{color:#ff7a8a;font-size:13px;padding:4px 8px 0;min-height:0}
+/* popover */
+.pop{position:absolute;right:0;bottom:calc(100% + 10px);width:min(300px,100%);background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:8px;z-index:20;box-shadow:0 20px 60px -10px #000;opacity:0;visibility:hidden;transform:translateY(8px) scale(.98);transform-origin:bottom right;transition:.2s}
+.pop.on{opacity:1;visibility:visible;transform:none}
+.seg{display:grid;gap:4px;background:rgba(255,255,255,.05);padding:4px;border-radius:14px;margin-bottom:6px}
+.seg button{padding:9px 6px;border-radius:10px;color:var(--mu);font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;transition:background .2s,color .2s}
+.seg button.rw{flex-direction:row;justify-content:center;gap:8px}
+.seg button:hover:not(:disabled){color:var(--tx)}
+.seg button.on{background:var(--grad);color:#fff}
+.seg svg{width:16px;height:16px}
+.sel{width:100%;background:rgba(255,255,255,.05);border:0;color:var(--tx);padding:11px 12px;border-radius:12px;font:inherit;font-weight:600;margin-bottom:6px;appearance:auto}
+.sel option{background:var(--bg2)}
+.cr{text-align:center;color:var(--mu);font-size:12px;padding:6px 0 4px}
+/* asset modal */
+.ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:grid;place-items:center;padding:14px;opacity:0;visibility:hidden;transition:.25s}
+.ov.on{opacity:1;visibility:visible}
+.pn{width:min(800px,100%);height:min(540px,90dvh);background:var(--bg2);border:1px solid var(--line);border-radius:26px;padding:12px;display:grid;grid-template-columns:170px 1fr 1fr;grid-template-rows:auto 1fr auto;gap:10px;transform:translateY(14px) scale(.97);transition:.3s}
+.ov.on .pn{transform:none}
+.pn .hd{grid-column:1/-1;display:flex;gap:10px}
+.pn input[type=search],.pn select{background:var(--bg);border:1px solid var(--line);border-radius:14px;color:var(--tx);padding:11px 14px;font:inherit}
+.pn input[type=search]{flex:1;min-width:0}.pn input:focus,.pn select:focus{outline:0;border-color:var(--ac)}
+.cats{display:flex;flex-direction:column;gap:2px;overflow:auto}
+.cats button{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--mu);text-align:left;font-size:14px;transition:background .2s}
+.cats button:hover{background:rgba(255,255,255,.06)}.cats button.on{background:rgba(124,92,255,.22);color:#fff;font-weight:600}
+.list{overflow:auto;display:flex;flex-direction:column;gap:6px;min-height:0}
+.row{display:flex;align-items:center;gap:12px;padding:8px;border-radius:14px;text-align:left;width:100%;transition:background .2s}
+.row:hover{background:rgba(255,255,255,.06)}.row.on{background:rgba(124,92,255,.22);outline:1px solid rgba(124,92,255,.5)}
+.row .t{width:44px;height:44px;border-radius:12px;flex:none;background-size:cover;background-position:center;display:grid;place-items:center;font-weight:700}
+.row small{color:var(--mu);display:block}
+.msg{color:var(--mu);text-align:center;padding:30px 10px;font-size:14px}
+.pv{background:var(--card);border-radius:18px;display:flex;flex-direction:column;padding:12px;min-height:0}
+.pv .box{flex:1;min-height:0;border-radius:14px;display:grid;place-items:center;overflow:hidden;color:var(--mu);text-align:center;font-size:14px;padding:10px}
+.pv .box img,.pv .box video{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
+.pv .circle{width:160px;height:160px;border-radius:50%;display:grid;place-items:center;font-size:56px;font-weight:700}
+.add{margin-top:10px;background:#fff;color:#111;border-radius:99px;padding:12px;font-weight:700;transition:transform .2s}.add:hover:not(:disabled){transform:translateY(-2px)}
+.upl{grid-column:1/3;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;font-weight:600;font-size:14px;width:max-content}.upl:hover{background:rgba(255,255,255,.07)}
+.uerr{grid-column:3;color:#ff7a8a;font-size:12px;align-self:center}
+#toasts{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;display:grid;gap:8px}
+.ts{background:#fff;color:#111;padding:11px 18px;border-radius:14px;font-weight:600;font-size:14px;animation:pop .3s;max-width:92vw}
+@media(max-width:820px){
+.app{grid-template-columns:1fr}aside{display:none}.top .logo{display:flex}
+.ws{padding:6px 14px 14px}.empty{font-size:18px}.sum{display:none}
+.pn{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto auto;height:94dvh}
+.cats{flex-direction:row}.cats button{white-space:nowrap;padding:8px 12px}
+.pn .pv{min-height:160px}.upl{grid-column:1}.uerr{grid-column:1}
+.foot{display:none}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+body.auth-pending{visibility:hidden}
+.account-email{display:block;max-width:100%;padding:4px 10px 22px;font-size:14px;line-height:1.35;letter-spacing:0;overflow-wrap:anywhere}
+</style>
+</head>
+<body class="auth-pending">
+<div class="app">
+<aside><div class="logo account-email" id="userEmail" title="Loading account">Loading account…</div>
+<button class="nav" id="navAll"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>All media</button></aside>
+<main id="main">
+<div class="top"><a class="logo" href="index.html" style="color:inherit;text-decoration:none"><svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="brand-bg-dashboard" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#805cff"/><stop offset="1" stop-color="#20dcb2"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#brand-bg-dashboard)"/><path d="M16 5.5c-5.7 0-9.5 4.3-9.5 10 0 4.7 3.6 8.7 9.5 11 5.9-2.3 9.5-6.3 9.5-11 0-5.7-3.8-10-9.5-10Z" fill="#f8f7ff"/><path d="M9.6 15.3c1.4-2.1 3.7-2 5-.1-.9 2.8-3.3 4-5 .1Zm7.8-.1c1.3-1.9 3.6-2 5 .1-1.7 3.9-4.1 2.7-5-.1Z" fill="#47328b"/><path d="M13.5 21c1.6 1 3.4 1 5 0" fill="none" stroke="#47328b" stroke-linecap="round" stroke-width="1.4"/><circle cx="16" cy="3.5" r="1.2" fill="#fff"/></svg>Alien.ai</a>
+<button class="ib" id="more" aria-label="More options" aria-haspopup="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+<span class="plus">PLUS</span><span class="av" id="accountAvatar" title="Account">A</span>
+<div class="menu" id="menu"><a href="index.html">Back to Alien.ai home</a><button id="clr">Clear this session</button><button id="logout">Logout</button></div></div>
+<div class="ws" id="ws"></div>
+<div class="foot">Alien.ai can make mistakes, so double-check it</div>
+<div class="cw">
+<div class="pop" id="pop" role="dialog" aria-label="Generation settings"></div>
+<form class="comp" id="comp" autocomplete="off">
+<div class="att" id="att"></div>
+<textarea id="pr" rows="1" placeholder="What do you want to create?" aria-label="Prompt"></textarea>
+<div class="err" id="er" role="alert"></div>
+<div class="bar">
+<button type="button" class="pill circ" id="plusBtn" aria-label="Add media"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+<button type="button" class="pill" id="agent" aria-pressed="false">Agent</button>
+<button type="button" class="pill sum" id="sum" aria-haspopup="dialog"></button>
+<button type="submit" class="send" id="go" aria-label="Generate"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div></form></div>
+</main></div>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="Select media"><div class="pn">
+<div class="hd"><select id="proj" aria-label="Source"><option>All projects</option><option>This session</option></select><input type="search" id="q" placeholder="Search assets" aria-label="Search assets"><select id="sort" aria-label="Sort"><option value="recent">Recent</option><option value="old">Oldest</option><option value="name">Name A–Z</option></select></div>
+<div class="cats" id="cats"></div><div class="list" id="list"></div>
+<div class="pv"><div class="box" id="box">Select an asset to preview it</div><button class="add" id="add" disabled>Add to prompt</button></div>
+<label class="upl" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Upload media<input type="file" id="fi" multiple accept="image/*,video/*,audio/*" hidden></label><span class="uerr" id="ue"></span>
+</div></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="demo-auth.js"></script>
+<script>
+try {
+  const username = window.AlienDemoAuth.getUsername();
+  if (!username) {
+    window.location.replace("index.html");
+  } else {
+    document.getElementById("userEmail").textContent = username;
+    document.getElementById("userEmail").title = username;
+    document.getElementById("accountAvatar").textContent = username.charAt(0).toUpperCase();
+    document.getElementById("accountAvatar").title = username;
+    document.body.classList.remove("auth-pending");
+  }
+} catch (error) {
+  console.error("Could not read the demo login session:", error);
+  window.location.replace("index.html");
+}
+</script>
+<script>
+/* ============ 1. CONFIG — edit to match your real backend/models ============ */
+const CONFIG={
+  API_BASE:"/api",
+  MAX_UPLOAD_MB:50, MAX_ATTACH:{frames:2,ingredients:3,image:4},
+  IMAGE_RATIOS:["16:9","4:3","1:1","3:4","9:16"], VIDEO_RATIOS:["16:9","9:16"], QTY:[1,2,3,4],
+  /* Placeholder entries only. Replace with models your API actually serves. */
+  IMAGE_MODELS:[{id:"image-model-1",name:"Image model 1 (placeholder)"},{id:"image-model-2",name:"Image model 2 (placeholder)"}],
+  VIDEO_MODELS:[
+    {id:"video-model-1",name:"Video model 1 (placeholder)",res:["360p","720p"],dur:[4,6,8,10]},
+    {id:"video-model-2",name:"Video model 2 (placeholder)",res:["720p"],dur:[4,8]}]
+};
+/* ============ 2. API SERVICE — the only place that talks to a backend ============ */
+const api={
+  async request(path,options={}){const s=window.AlienDemoAuth.getSession();const h=new Headers(options.headers||{});if(s?.access_token)h.set("Authorization","Bearer "+s.access_token);if(options.body&&!(options.body instanceof FormData))h.set("Content-Type","application/json");const r=await fetch(CONFIG.API_BASE+path,{...options,headers:h});const b=await r.json().catch(()=>null);if(!r.ok)throw new Error(b?.error?.message||`Request failed (${r.status})`);return b?.data},
+  async uploadMedia(file){const fd=new FormData();fd.append("file",file);return this.request("/uploads",{method:"POST",body:fd})},
+  async fetchAssets(){return []},
+  async submitGeneration(req){const image=req.mode==="image";const result=await this.request(image?"/generations/image":"/generations/video",{method:"POST",body:JSON.stringify(image?{prompt:req.prompt,size:req.aspectRatio==="1:1"?"1024x1024":"auto"}:{prompt:req.prompt,ratio:req.aspectRatio==="9:16"?"720:1280":"1280:720",duration:[5,10].includes(req.durationSeconds)?req.durationSeconds:5})});return{jobId:result.id,data:result}},
+  async getResult(jobId){return this.request("/generations/"+encodeURIComponent(jobId))}
+};
+/* ============ 3. STATE ============ */
+const $=(s,c=document)=>c.querySelector(s),$$=(s,c=document)=>[...c.querySelectorAll(s)];
+const toast=t=>{const e=document.createElement('div');e.className='ts';e.textContent=t;$('#toasts').append(e);setTimeout(()=>e.remove(),3200)};
+const svgBg=(a,b)=>`url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient></defs><rect width='120' height='120' fill='url(#g)'/></svg>`)}")`;
+const now=Date.now();
+const S={
+  assets:[ // Sample assets so the picker has content. They are not real files.
+    {id:"s1",name:"Me",type:"Avatar",cat:"Avatars",bg:["#7c5cff","#22e6a8"],ts:now-1000,sample:true},
+    {id:"s2",name:"Space explorer",type:"Character",cat:"Characters",bg:["#b05cff","#17224f"],ts:now-5000,sample:true},
+    {id:"s3",name:"Neon city",type:"Image",cat:"Images",bg:["#0f6b62","#7c5cff"],ts:now-9000,sample:true},
+    {id:"s4",name:"Intro clip",type:"Video",cat:"Videos",bg:["#3b2a9c","#e0619b"],ts:now-12000,sample:true},
+    {id:"s5",name:"Narrator voice",type:"Voice",cat:"Voices",bg:["#22e6a8","#17224f"],ts:now-15000,sample:true}],
+  attached:[], outputs:[], busy:false, agent:false, sel:null, cat:"All",
+  cfg:{mode:"image",vInput:"frames",iRatio:"16:9",vRatio:"16:9",iModel:CONFIG.IMAGE_MODELS[0].id,vModel:CONFIG.VIDEO_MODELS[0].id,res:"720p",dur:8,qty:2}
+};
+const vModel=()=>CONFIG.VIDEO_MODELS.find(m=>m.id===S.cfg.vModel);
+function fixCaps(){const m=vModel();if(!m.res.includes(S.cfg.res))S.cfg.res=m.res[m.res.length-1];if(!m.dur.includes(S.cfg.dur))S.cfg.dur=m.dur[m.dur.length-1]}
+const maxAttach=()=>S.cfg.mode==='image'?CONFIG.MAX_ATTACH.image:CONFIG.MAX_ATTACH[S.cfg.vInput];
+/* ============ 4. UI: summary + settings popover ============ */
+const I={img:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M21 16l-5-5-8 9"/></svg>',vid:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',fr:'<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',ing:'<svg viewBox="0 0 24 24"><path d="M5 5h6v3a2 2 0 104 0V5h4v6h-3a2 2 0 100 4h3v4H5z"/></svg>'};
+const rIcon=r=>{const[w,h]=r.split(':').map(Number),s=14,W=w>=h?s:Math.round(s*w/h),H=h>=w?s:Math.round(s*h/w);return`<svg viewBox="0 0 16 16" style="width:16px;height:16px"><rect x="${8-W/2}" y="${8-H/2}" width="${W}" height="${H}" rx="1.5"/></svg>`};
+function summary(){const c=S.cfg;return c.mode==='image'?`${I.img} Image · ${c.iRatio} · ×${c.qty}`:`${I.vid} Video · ${c.res} · ${c.dur}s · ${c.vRatio} · ×${c.qty}`}
+function renderSum(){$('#sum').innerHTML=summary()}
+function renderPop(){
+  const c=S.cfg,v=c.mode==='video',ratios=v?CONFIG.VIDEO_RATIOS:CONFIG.IMAGE_RATIOS,m=vModel();
+  const btn=(on,attr,inner,dis)=>`<button type="button" class="${on?'on':''}" ${attr} ${dis?'disabled title="Not supported by this model"':''}>${inner}</button>`;
+  let h=`<div class="seg" style="grid-template-columns:1fr 1fr">${btn(!v,'data-mode="image"',I.img+'Image').replace('<button','<button').replace('class="','class="rw ')}${btn(v,'data-mode="video"',I.vid+'Video').replace('class="','class="rw ')}</div>`;
+  if(v)h+=`<div class="seg" style="grid-template-columns:1fr 1fr">${btn(c.vInput==='frames','data-vin="frames"',I.fr+'Frames').replace('class="','class="rw ')}${btn(c.vInput==='ingredients','data-vin="ingredients"',I.ing+'Ingredients').replace('class="','class="rw ')}</div>`;
+  h+=`<div class="seg" style="grid-template-columns:repeat(${ratios.length},1fr)">${ratios.map(r=>btn((v?c.vRatio:c.iRatio)===r,`data-ratio="${r}"`,rIcon(r)+r)).join('')}</div>`;
+  const models=v?CONFIG.VIDEO_MODELS:CONFIG.IMAGE_MODELS;
+  h+=`<select class="sel" id="mdl" aria-label="Model">${models.map(o=>`<option value="${o.id}" ${(v?c.vModel:c.iModel)===o.id?'selected':''}>${o.name}</option>`).join('')}</select>`;
+  if(v){
+    h+=`<div class="seg" style="grid-template-columns:1fr 1fr">${["360p","720p"].map(r=>btn(c.res===r,`data-res="${r}"`,r,!m.res.includes(r))).join('')}</div>`;
+    h+=`<div class="seg" style="grid-template-columns:repeat(4,1fr)">${[4,6,8,10].map(d=>btn(c.dur===d,`data-dur="${d}"`,d+'s',!m.dur.includes(d))).join('')}</div>`}
+  h+=`<div class="seg" style="grid-template-columns:repeat(4,1fr)">${CONFIG.QTY.map(q=>btn(c.qty===q,`data-qty="${q}"`,'×'+q)).join('')}</div><div class="cr">Credits: not connected yet</div>`;
+  $('#pop').innerHTML=h;
+}
+const popOpen=on=>{$('#pop').classList.toggle('on',on);$('#sum').setAttribute('aria-expanded',on);if(on)renderPop()};
+$('#sum').onclick=e=>{e.stopPropagation();popOpen(!$('#pop').classList.contains('on'))};
+$('#pop').addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b||b.disabled)return;const d=b.dataset,c=S.cfg;
+  if(d.mode)c.mode=d.mode;if(d.vin)c.vInput=d.vin;if(d.ratio)c[c.mode==='video'?'vRatio':'iRatio']=d.ratio;
+  if(d.res)c.res=d.res;if(d.dur)c.dur=+d.dur;if(d.qty)c.qty=+d.qty;fixCaps();trimAttach();renderPop();renderSum();renderAtt()});
+$('#pop').addEventListener('change',e=>{if(e.target.id!=='mdl')return;S.cfg[S.cfg.mode==='video'?'vModel':'iModel']=e.target.value;fixCaps();renderPop();renderSum()});
+function trimAttach(){const n=maxAttach();if(S.attached.length>n){S.attached=S.attached.slice(0,n);toast(`This mode allows up to ${n} attachments`)}}
+/* ============ 5. Attachments ============ */
+const thumb=a=>a.url&&a.type!=='Video'&&a.type!=='Voice'?`url("${a.url}")`:svgBg(...(a.bg||["#7c5cff","#22e6a8"]));
+function renderAtt(){const c=S.cfg;let hint='';
+  if(c.mode==='video')hint=c.vInput==='frames'?`Frames: up to ${maxAttach()} images (start / end)`:`Ingredients: up to ${maxAttach()} reference assets`;
+  $('#att').innerHTML=S.attached.map(a=>`<div class="ch"><span class="t" style="background-image:${thumb(a)}"></span><span>${esc(a.name)}</span><button type="button" data-rm="${a.id}" aria-label="Remove ${esc(a.name)}">✕</button></div>`).join('')+(hint&&!S.attached.length?`<small style="color:var(--mu);padding:0 6px">${hint}</small>`:'');
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#att').onclick=e=>{const b=e.target.closest('[data-rm]');if(!b)return;S.attached=S.attached.filter(a=>a.id!==b.dataset.rm);renderAtt()};
+/* ============ 6. Media picker ============ */
+const CATS=[["All","M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],["Images","M4 5h16v14H4zM8 10h.01M20 16l-5-5-8 8"],["Videos","M3 6h13v12H3zM16 10l5-3v10l-5-3"],["Voices","M12 3v12M8 7v5M16 7v5M4 9v2M20 9v2M9 20h6"],["Characters","M12 4a2 2 0 100 .01M5 9h14M12 9v6l-3 6M12 15l3 6"],["Avatars","M12 3a9 9 0 100 18 9 9 0 000-18zM9 10h.01M15 10h.01M8.5 15c2 2 5 2 7 0"],["Uploads","M3 7h6l2 2h10v10H3zM12 17v-5M9.5 14.5L12 12l2.5 2.5"]];
+$('#cats').innerHTML=CATS.map(c=>`<button data-cat="${c[0]}"><svg viewBox="0 0 24 24"><path d="${c[1]}"/></svg>${c[0]}</button>`).join('');
+const visible=()=>{const q=$('#q').value.trim().toLowerCase(),so=$('#sort').value;
+  let l=S.assets.filter(a=>(S.cat==='All'||(S.cat==='Uploads'?a.upload:a.cat===S.cat))&&(!q||a.name.toLowerCase().includes(q)||a.type.toLowerCase().includes(q)));
+  return l.sort((a,b)=>so==='name'?a.name.localeCompare(b.name):so==='old'?a.ts-b.ts:b.ts-a.ts)};
+function renderPicker(){
+  $$('#cats button').forEach(b=>b.classList.toggle('on',b.dataset.cat===S.cat));
+  const l=visible(),el=$('#list');
+  el.innerHTML=l.length?l.map(a=>`<button class="row ${S.sel===a.id?'on':''}" data-id="${a.id}"><span class="t" style="background-image:${thumb(a)}">${a.type==='Voice'?'♪':''}</span><span>${esc(a.name)}<small>${a.type}${a.sample?' · sample':''}</small></span></button>`).join(''):`<div class="msg">${S.assets.length?'No assets match your search or filter.':'No media yet. Upload something to get started.'}</div>`;
+  const a=S.assets.find(x=>x.id===S.sel),box=$('#box');$('#add').disabled=!a;
+  if(!a){box.textContent='Select an asset to preview it';return}
+  if(a.url&&a.type==='Image')box.innerHTML=`<img src="${a.url}" alt="${esc(a.name)}">`;
+  else if(a.url&&a.type==='Video')box.innerHTML=`<video src="${a.url}" controls></video>`;
+  else if(a.url&&a.type==='Voice')box.innerHTML=`<audio src="${a.url}" controls></audio>`;
+  else if(a.type==='Avatar')box.innerHTML=`<div class="circle" style="background:${svgBg(...a.bg)}">${esc(a.name[0])}</div>`;
+  else box.innerHTML=`<div>${a.type} preview<br><small>Sample asset, no real media attached</small></div>`;
+}
+const openPicker=()=>{$('#ov').classList.add('on');$('#ue').textContent='';renderPicker();setTimeout(()=>$('#q').focus(),150)};
+const closePicker=()=>$('#ov').classList.remove('on');
+$('#plusBtn').onclick=openPicker;
+$('#cats').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){S.cat=b.dataset.cat;renderPicker()}};
+$('#list').onclick=e=>{const b=e.target.closest('[data-id]');if(b){S.sel=b.dataset.id;renderPicker()}};
+$('#q').oninput=$('#sort').onchange=renderPicker;
+$('#ov').onclick=e=>{if(e.target.id==='ov')closePicker()};
+$('#add').onclick=()=>{const a=S.assets.find(x=>x.id===S.sel);if(!a)return;
+  if(S.attached.some(x=>x.id===a.id))return toast('Already attached');
+  if(S.attached.length>=maxAttach())return toast(`This mode allows up to ${maxAttach()} attachments`);
+  S.attached.push(a);renderAtt();closePicker();toast('Added to prompt')};
+/* ============ 7. File handling ============ */
+function ingest(files){const errs=[];let n=0;
+  [...files].forEach(f=>{const t=f.type.startsWith('image/')?['Image','Images']:f.type.startsWith('video/')?['Video','Videos']:f.type.startsWith('audio/')?['Voice','Voices']:null;
+    if(!t)return errs.push(`${f.name}: unsupported type`);
+    if(f.size>CONFIG.MAX_UPLOAD_MB*1048576)return errs.push(`${f.name}: over ${CONFIG.MAX_UPLOAD_MB} MB`);
+    const a={id:'u'+Math.random().toString(36).slice(2),name:f.name,type:t[0],cat:t[1],url:URL.createObjectURL(f),ts:Date.now(),upload:true,local:true};
+    S.assets.push(a);S.sel=a.id;n++;
+    api.uploadMedia(f).catch(e=>{if(!e.notConnected)toast('Upload failed: '+f.name)})}); // backend hook
+  $('#ue').textContent=errs.join(' · ');if(n){toast(`${n} file${n>1?'s':''} added locally (not saved to a server)`);renderPicker();renderWs()}
+  return n}
+$('#fi').onchange=e=>{ingest(e.target.files);e.target.value=''};
+const ws=$('#ws');['dragenter','dragover'].forEach(v=>ws.addEventListener(v,e=>{e.preventDefault();ws.classList.add('drag')}));
+['dragleave','drop'].forEach(v=>ws.addEventListener(v,e=>{e.preventDefault();ws.classList.remove('drag')}));
+ws.addEventListener('drop',e=>{const before=S.assets.length;if(ingest(e.dataTransfer.files)){S.assets.slice(before).forEach(a=>{if(S.attached.length<maxAttach())S.attached.push(a)});renderAtt()}});
+/* ============ 8. Workspace + generation ============ */
+const PX=["..#####..",".##...##.","##.###.##","##.#.#.##","##.###.##",".##...##.","..#####..","....#....","..#.#.#..","...###..."];
+function renderWs(){
+  const up=S.assets.filter(a=>a.upload);
+  if(!S.outputs.length&&!up.length){ws.innerHTML=`<div class="empty"><svg viewBox="0 0 9 10" shape-rendering="crispEdges">${PX.map((r,y)=>[...r].map((c,x)=>c==='#'?`<rect x="${x}" y="${y}" width="1" height="1"/>`:'').join('')).join('')}</svg>Start creating or drop media</div>`;return}
+  ws.innerHTML='<div class="grid">'+S.outputs.map(o=>o.pending?`<div class="it"><div class="spin" style="aspect-ratio:${o.ratio.replace(':','/')}"><i></i></div><div class="bd"><p>${esc(o.prompt)}</p><span class="tag">Submitting…</span></div></div>`
+   :`<div class="it">${o.url?(o.url.includes('.mp4')||o.type==='video'?`<video class="th" src="${o.url}" controls style="aspect-ratio:${o.ratio.replace(':','/')}"></video>`:`<img class="th" src="${o.url}" alt="${esc(o.prompt)}" style="aspect-ratio:${o.ratio.replace(':','/')}">`):`<div class="th" style="aspect-ratio:${o.ratio.replace(':','/')}">${o.status==='failed'? 'Generation failed.':esc(o.status||'Processing')}</div>`}<button class="rm" data-o="${o.id}" aria-label="Remove">✕</button><div class="bd"><p>${esc(o.prompt)}</p><span class="tag w">${esc(o.status||'Submitted')}</span>${o.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>`).join('')
+   +up.map(a=>`<div class="it">${a.type==='Image'?`<img class="th" src="${a.url}" alt="${esc(a.name)}" style="aspect-ratio:4/3">`:a.type==='Video'?`<video class="th" src="${a.url}" controls style="aspect-ratio:4/3"></video>`:`<div class="th" style="aspect-ratio:4/3"><audio src="${a.url}" controls></audio></div>`}<div class="bd"><p>${esc(a.name)}</p><span class="tag">Local upload</span></div></div>`).join('')+'</div>';
+}
+ws.onclick=e=>{const b=e.target.closest('[data-o]');if(b){S.outputs=S.outputs.filter(o=>o.id!==b.dataset.o);renderWs()}};
+$('#comp').onsubmit=async e=>{e.preventDefault();if(S.busy)return;
+  const p=$('#pr').value.trim(),er=$('#er');er.textContent='';
+  if(p.length<3){er.textContent='Describe what you want to create (at least 3 characters).';return}
+  const c=S.cfg,v=c.mode==='video',m=vModel();
+  const req={mode:c.mode,prompt:p,agent:S.agent,aspectRatio:v?c.vRatio:c.iRatio,model:v?c.vModel:c.iModel,quantity:c.qty,
+    ...(v?{resolution:c.res,durationSeconds:c.dur,inputMethod:c.vInput}:{}),attachments:S.attached.map(a=>({id:a.id,name:a.name,type:a.type}))};
+  const tags=[v?`${c.res} · ${c.dur}s`:'Image',req.aspectRatio,'×'+c.qty,...(S.attached.length?[S.attached.length+' attached']:[])];
+  const o={id:'o'+Date.now(),prompt:p,ratio:req.aspectRatio,pending:true,tags};S.outputs.unshift(o);
+  S.busy=true;$('#go').disabled=true;renderWs();
+  try{const r=await api.submitGeneration(req);o.pending=false;o.jobId=r?.jobId;o.status=r?.data?.status||'submitted';o.type=req.mode;
+    if(o.status==='completed'&&r.data.output_media_path){const media=await api.request('/media/'+encodeURIComponent(r.data.output_media_path));o.url=media.signed_url}
+    toast('Generation submitted successfully.')}
+  catch(err){o.pending=false;await new Promise(r=>setTimeout(r,500));
+    S.outputs=S.outputs.filter(x=>x!==o);er.textContent='Generation failed: '+err.message}
+  S.busy=false;$('#go').disabled=false;S.attached=[];renderAtt();renderWs();console.info('Generation request payload (not sent):',req)};
+$('#pr').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,180)+'px'});
+$('#pr').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#comp').requestSubmit()}});
+$('#agent').onclick=e=>{S.agent=!S.agent;e.currentTarget.classList.toggle('on',S.agent);e.currentTarget.setAttribute('aria-pressed',S.agent);toast(S.agent?'Agent mode on (needs backend support to act)':'Agent mode off')};
+/* top menu, global dismissal */
+$('#more').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('on')};
+$('#clr').onclick=()=>{S.outputs=[];S.attached=[];S.assets=S.assets.filter(a=>!a.upload);$('#menu').classList.remove('on');renderAtt();renderWs();toast('Session cleared')};
+$('#logout').onclick=()=>{try{window.AlienDemoAuth.signOut();window.location.replace('index.html')}catch(error){console.error('Demo logout failed:',error);toast('Could not log out. Please enable browser storage and try again.')}};
+$('#navAll').onclick=()=>{ws.scrollTo({top:0,behavior:'smooth'})};
+document.addEventListener('click',e=>{popOpen(false);if(!e.target.closest('#menu'))$('#menu').classList.remove('on')});
+addEventListener('keydown',e=>{if(e.key==='Escape'){closePicker();popOpen(false);$('#menu').classList.remove('on')}});
+/* init */
+fixCaps();renderSum();renderAtt();renderWs();
+const qp=new URLSearchParams(location.search).get('prompt');if(qp){$('#pr').value=`${qp}: `;$('#pr').focus()}
+api.fetchAssets().then(a=>{if(a)S.assets=a}).catch(()=>toast('Could not load your media'));
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import express from "express";
+import path from "node:path";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -19,5 +20,10 @@ app.use("/api/generations", rateLimit({
   legacyHeaders: false,
 }));
 app.use("/api", apiRouter);
+const frontendPath = path.resolve(process.cwd(), "frontend", "Alian.ai");
+app.use(express.static(frontendPath));
+app.get("/", (_req, res) => res.sendFile(path.join(frontendPath, "index.html")));
+app.get(["/index.html", "/login.html", "/dashboard.html", "/info.html"], (req, res) =>
+  res.sendFile(path.join(frontendPath, path.basename(req.path))));
 app.use(notFound);
 app.use(errorHandler);

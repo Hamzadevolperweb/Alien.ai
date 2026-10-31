@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Alien.ai – AI Video Generator for Long-Form Content</title>
+    <meta name="description" content="Create AI videos up to 50 minutes from ideas, scripts, or stories. Free to try.">
+    <style>
+        :root {
+            --bg: #07060d;
+            --bg2: #100d1c;
+            --card: #14111f;
+            --line: rgba(255, 255, 255, .09);
+            --tx: #f4f2fb;
+            --mu: #a29cb8;
+            --ac: #7c5cff;
+            --ac2: #22e6a8;
+            --r: 20px
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--tx);
+            font: 16px/1.6 "Segoe UI", system-ui, -apple-system, Inter, sans-serif;
+            overflow-x: hidden
+        }
+
+        body.demo-auth-pending {
+            visibility: hidden
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        button {
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+            border: 0;
+            background: none
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--ac2);
+            outline-offset: 2px
+        }
+
+        .wrap {
+            width: min(1200px, 92%);
+            margin: auto
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-weight: 600;
+            transition: transform .2s, box-shadow .2s
+        }
+
+        .btn.p {
+            background: linear-gradient(135deg, var(--ac), #b05cff);
+            box-shadow: 0 8px 30px -8px var(--ac)
+        }
+
+        .btn.p:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 40px -8px var(--ac)
+        }
+
+        .btn.g {
+            border: 1px solid var(--line)
+        }
+
+        .btn.g:hover {
+            background: rgba(255, 255, 255, .07)
+        }
+
+        /* nav */
+        header {
+            position: fixed;
+            inset: 0 0 auto;
+            z-index: 50;
+            padding-top: env(safe-area-inset-top, 0);
+            transition: background .3s, backdrop-filter .3s
+        }
+
+        header.sc {
+            background: rgba(7, 6, 13, .8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--line)
+        }
+
+        nav {
+            height: 68px;
+            display: flex;
+            align-items: center;
+            gap: 28px
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 22px;
+            letter-spacing: -.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .logo-mark {
+            width: 30px;
+            height: 30px;
+            flex: none;
+            filter: drop-shadow(0 3px 8px rgba(124, 92, 255, .35))
+        }
+
+        .menu {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+            align-items: center
+        }
+
+        .dd {
+            position: relative
+        }
+
+        .dd>button,
+        .menu>a {
+            padding: 8px 14px;
+            border-radius: 10px;
+            color: var(--mu);
+            transition: color .2s, background .2s
+        }
+
+        .dd>button:hover,
+        .menu>a:hover,
+        .dd.open>button {
+            color: var(--tx);
+            background: rgba(255, 255, 255, .06)
+        }
+
+        .dd>button:after {
+            content: "";
+            display: inline-block;
+            margin-left: 7px;
+            width: 6px;
+            height: 6px;
+            border: solid currentColor;
+            border-width: 0 1.5px 1.5px 0;
+            transform: rotate(45deg) translateY(-2px);
+            transition: transform .25s
+        }
+
+        .dd.open>button:after {
+            transform: rotate(225deg)
+        }
+
+        .pan {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 240px;
+            background: var(--bg2);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: .22s;
+            max-height: 70vh;
+            overflow: auto
+        }
+
+        .dd.open .pan {
+            opacity: 1;
+            visibility: visible;
+            transform: none
+        }
+
+        .pan a {
+            display: block;
+            padding: 9px 12px;
+            border-radius: 10px;
+            color: var(--mu);
+            font-size: 14px
+        }
+
+        .pan a:hover {
+            background: rgba(124, 92, 255, .15);
+            color: var(--tx)
+        }
+
+        .lang {
+            margin-left: 6px
+        }
+
+        .burger {
+            display: none;
+            margin-left: auto;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid var(--line)
+        }
+
+        .burger span {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: #fff;
+            margin: 4px auto;
+            transition: .3s
+        }
+
+        .burger.on span:nth-child(1) {
+            transform: translateY(6px) rotate(45deg)
+        }
+
+        .burger.on span:nth-child(2) {
+            opacity: 0
+        }
+
+        .burger.on span:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg)
+        }
+
+        @media(max-width:960px) {
+            .burger {
+                display: block
+            }
+
+            .menu {
+                position: fixed;
+                inset: 68px 0 0;
+                background: var(--bg);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 16px 5%;
+                margin: 0;
+                transform: translateX(100%);
+                transition: transform .35s;
+                overflow: auto;
+                gap: 2px
+            }
+
+            .menu.on {
+                transform: none
+            }
+
+            .pan {
+                position: static;
+                display: none;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                border: 0;
+                padding: 0 0 0 12px;
+                max-height: none
+            }
+
+            .dd.open .pan {
+                display: block
+            }
+
+            .dd>button {
+                width: 100%;
+                text-align: left
+            }
+        }
+
+        /* hero */
+        .hero {
+            position: relative;
+            padding: 150px 0 90px;
+            text-align: center;
+            overflow: hidden
+        }
+
+        .hero:before {
+            content: "";
+            position: absolute;
+            inset: -20% -10% auto;
+            height: 90%;
+            background: radial-gradient(40% 50% at 30% 30%, rgba(124, 92, 255, .45), transparent), radial-gradient(35% 45% at 72% 35%, rgba(34, 230, 168, .25), transparent);
+            filter: blur(40px);
+            animation: drift 14s ease-in-out infinite alternate
+        }
+
+        @keyframes drift {
+            to {
+                transform: translate(4%, 6%) scale(1.1)
+            }
+        }
+
+        .hero>* {
+            position: relative
+        }
+
+        h1 {
+            font-size: clamp(34px, 6vw, 72px);
+            line-height: 1.05;
+            letter-spacing: -2px;
+            max-width: 960px;
+            margin: 0 auto 22px
+        }
+
+        h1 em {
+            font-style: normal;
+            background: linear-gradient(90deg, #b9a7ff, var(--ac2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .sub {
+            color: var(--mu);
+            max-width: 640px;
+            margin: 0 auto 32px;
+            font-size: 18px
+        }
+
+        .stage {
+            margin: 56px auto 0;
+            width: min(1000px, 100%);
+            aspect-ratio: 16/9;
+            border-radius: 28px;
+            border: 1px solid var(--line);
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 40px 120px -30px rgba(124, 92, 255, .55)
+        }
+
+        .scene {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 1s;
+            display: grid;
+            place-items: end start;
+            padding: 28px;
+            font-size: clamp(14px, 2vw, 20px);
+            font-weight: 600
+        }
+
+        .scene.on {
+            opacity: 1
+        }
+
+        .scene video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+
+        .scene:after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(transparent 50%, rgba(0, 0, 0, .7));
+            z-index: 0
+        }
+
+        .scene span {
+            position: relative;
+            z-index: 1
+        }
+
+        .play {
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .18);
+            backdrop-filter: blur(10px);
+            z-index: 3;
+            display: grid;
+            place-items: center;
+            transition: transform .2s
+        }
+
+        .play:hover {
+            transform: scale(1.1)
+        }
+
+        .play:before {
+            content: "";
+            border: solid transparent;
+            border-width: 11px 0 11px 18px;
+            border-left-color: #fff;
+            margin-left: 5px
+        }
+
+        .stage.paused .scene {
+            animation-play-state: paused
+        }
+
+        .bar {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            height: 4px;
+            background: var(--ac2);
+            width: 0;
+            z-index: 4
+        }
+
+        /* sections */
+        section {
+            padding: 90px 0
+        }
+
+        h2 {
+            font-size: clamp(28px, 4vw, 48px);
+            line-height: 1.12;
+            letter-spacing: -1.2px;
+            text-align: center;
+            max-width: 820px;
+            margin: 0 auto 14px
+        }
+
+        .lead {
+            color: var(--mu);
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 44px
+        }
+
+        .grid7 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px
+        }
+
+        .cc {
+            position: relative;
+            border-radius: var(--r);
+            overflow: hidden;
+            aspect-ratio: 3/4;
+            border: 1px solid var(--line);
+            background: var(--bgc);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 18px;
+            transition: transform .35s, border-color .35s;
+            text-align: left;
+            width: 100%
+        }
+
+        .cc:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255, 255, 255, .3)
+        }
+
+        .cc-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            z-index: 0;
+            transition: transform .6s
+        }
+
+        .cc:hover .cc-video {
+            transform: scale(1.08)
+        }
+
+        .cc:after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(transparent 35%, rgba(0, 0, 0, .82));
+            z-index: 1
+        }
+
+        .cc b,
+        .cc .go {
+            position: relative;
+            z-index: 2
+        }
+
+        .cc b {
+            font-size: 19px
+        }
+
+        .cc .go {
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, .16);
+            align-self: flex-start;
+            transition: background .2s
+        }
+
+        .cc:hover .go {
+            background: var(--ac)
+        }
+
+        .more {
+            text-align: center;
+            margin-top: 36px
+        }
+
+        @media(max-width:900px) {
+            .grid7 {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        .mq {
+            overflow: hidden;
+            mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+            margin-top: 60px
+        }
+
+        .mq .lab {
+            text-align: center;
+            color: var(--mu);
+            font-size: 14px;
+            margin-bottom: 18px
+        }
+
+        .track {
+            display: flex;
+            gap: 16px;
+            width: max-content;
+            animation: mq 32s linear infinite
+        }
+
+        .mq:hover .track {
+            animation-play-state: paused
+        }
+
+        @keyframes mq {
+            to {
+                transform: translateX(-50%)
+            }
+        }
+
+        .chip {
+            padding: 12px 26px;
+            border: 1px solid var(--line);
+            border-radius: 99px;
+            background: var(--card);
+            font-weight: 600;
+            white-space: nowrap
+        }
+
+        .feat {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 56px;
+            align-items: center;
+            margin-bottom: 90px
+        }
+
+        .feat:nth-child(even) .fv {
+            order: 2
+        }
+
+        .feat h3 {
+            font-size: clamp(24px, 3vw, 36px);
+            line-height: 1.15;
+            letter-spacing: -.8px;
+            margin-bottom: 14px
+        }
+
+        .feat p {
+            color: var(--mu)
+        }
+
+        .fv {
+            aspect-ratio: 4/3;
+            border-radius: 28px;
+            border: 1px solid var(--line);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            font-size: 70px
+        }
+
+        .fv img {
+             width : 100%;
+            height: 100%;
+        }
+
+        .fv i {
+            position: absolute;
+            inset: 0;
+            animation: pan 9s ease-in-out infinite alternate
+        }
+
+        @keyframes pan {
+            to {
+                transform: scale(1.15) rotate(2deg)
+            }
+        }
+
+        .fv span {
+            position: relative
+            width "100%";
+        }
+
+        @media(max-width:820px) {
+            .feat {
+                grid-template-columns: 1fr;
+                gap: 24px
+            }
+
+            .feat:nth-child(even) .fv {
+                order: 0
+            }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px
+        }
+
+        .stat {
+            padding: 40px 20px;
+            text-align: center;
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            background: var(--card)
+        }
+
+        .stat b {
+            display: block;
+            font-size: clamp(36px, 5vw, 60px);
+            letter-spacing: -2px;
+            background: linear-gradient(90deg, #fff, #b9a7ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .stat span {
+            color: var(--mu)
+        }
+
+        @media(max-width:700px) {
+            .stats {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .tools {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px
+        }
+
+        .tool {
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            background: var(--card);
+            transition: .3s;
+            display: block
+        }
+
+        .tool:hover {
+            transform: translateY(-4px);
+            border-color: var(--ac);
+            background: #1a1530
+        }
+
+        .tool h4 {
+            font-size: 18px;
+            margin-bottom: 6px
+        }
+
+        .tool p {
+            color: var(--mu);
+            font-size: 14px
+        }
+
+        @media(max-width:900px) {
+            .tools {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media(max-width:560px) {
+            .tools {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .tm {
+            overflow: hidden;
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)
+        }
+
+        .tm .track {
+            animation-duration: 55s
+        }
+
+        .tc {
+            width: 340px;
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            background: var(--card);
+            white-space: normal
+        }
+
+        .tc p {
+            color: #d9d4ea;
+            font-size: 15px;
+            margin-bottom: 16px
+        }
+
+        .tc div {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px
+        }
+
+        .tc small {
+            color: var(--mu);
+            display: block
+        }
+
+        .av {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--ac), var(--ac2))
+        }
+
+        .cta {
+            position: relative;
+            text-align: center;
+            padding: 130px 0 160px;
+            overflow: hidden
+        }
+
+        .cta:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(60% 70% at 50% 100%, rgba(124, 92, 255, .5), transparent)
+        }
+
+        .moon {
+            position: absolute;
+            left: 50%;
+            bottom: -170px;
+            width: min(620px, 90vw);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(circle at 35% 30%, #fff, #cfc3ff 40%, #5b43c9 80%);
+            box-shadow: 0 0 140px 30px rgba(124, 92, 255, .5);
+            animation: fl 8s ease-in-out infinite alternate
+        }
+
+        @keyframes fl {
+            to {
+                transform: translate(-50%, -18px)
+            }
+        }
+
+        .cta>.wrap {
+            position: relative;
+            z-index: 1
+        }
+
+        footer {
+            border-top: 1px solid var(--line);
+            padding: 60px 0 30px;
+            background: var(--bg)
+        }
+
+        .fg {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr 1fr 1fr;
+            gap: 32px
+        }
+
+        footer h5 {
+            margin-bottom: 12px
+        }
+
+        footer li {
+            list-style: none;
+            margin-bottom: 8px
+        }
+
+        footer li a,
+        .fg p {
+            color: var(--mu);
+            font-size: 14px
+        }
+
+        footer li a:hover {
+            color: #fff
+        }
+
+        .stores {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px
+        }
+
+        .stores a {
+            padding: 8px 16px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 13px
+        }
+
+        .copy {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: var(--mu);
+            font-size: 13px
+        }
+
+        @media(max-width:760px) {
+            .fg {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        /* reveal */
+        .rv {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity .8s, transform .8s
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        /* modal */
+        .ov {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, .7);
+            backdrop-filter: blur(6px);
+            display: grid;
+            place-items: center;
+            padding: 16px;
+            opacity: 0;
+            visibility: hidden;
+            transition: .25s
+        }
+
+        .ov.on {
+            opacity: 1;
+            visibility: visible
+        }
+
+        .md {
+            width: min(720px, 100%);
+            max-height: 92vh;
+            overflow: auto;
+            background: var(--bg2);
+            border: 1px solid var(--line);
+            border-radius: 26px;
+            padding: 28px;
+            transform: scale(.95) translateY(14px);
+            transition: .3s;
+            position: relative
+        }
+
+        .ov.on .md {
+            transform: none
+        }
+
+        .x {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .08);
+            font-size: 20px
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, .05);
+            padding: 5px;
+            border-radius: 14px;
+            margin: 16px 0;
+            flex-wrap: wrap
+        }
+
+        .tabs button {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 10px;
+            color: var(--mu);
+            font-size: 14px;
+            white-space: nowrap
+        }
+
+        .tabs button.on {
+            background: var(--ac);
+            color: #fff
+        }
+
+        textarea,
+        select,
+        input[type=text] {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--tx);
+            padding: 14px;
+            font: inherit
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical
+        }
+
+        textarea:focus,
+        select:focus {
+            border-color: var(--ac);
+            outline: 0
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            margin: 14px 0;
+            flex-wrap: wrap
+        }
+
+        .row>* {
+            flex: 1;
+            min-width: 150px
+        }
+
+        .up {
+            border: 1.5px dashed var(--line);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            color: var(--mu);
+            cursor: pointer;
+            font-size: 14px;
+            display: block
+        }
+
+        .up:hover {
+            border-color: var(--ac)
+        }
+
+        .ar {
+            display: flex;
+            gap: 8px
+        }
+
+        .ar button {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            font-size: 14px
+        }
+
+        .ar button.on {
+            border-color: var(--ac2);
+            color: var(--ac2)
+        }
+
+        .err {
+            color: #ff7a8a;
+            font-size: 13px;
+            min-height: 18px;
+            margin-top: 6px
+        }
+
+        .prog {
+            height: 8px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, .08);
+            overflow: hidden;
+            margin: 16px 0 8px
+        }
+
+        .prog i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--ac), var(--ac2));
+            transition: width .3s
+        }
+
+        .res {
+            margin-top: 16px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 18px;
+            display: none
+        }
+
+        .res.on {
+            display: block
+        }
+
+        .res .pv {
+            border-radius: 12px;
+            aspect-ratio: 16/9;
+            margin-bottom: 12px;
+            display: grid;
+            place-items: center;
+            color: var(--mu);
+            font-size: 14px;
+            text-align: center;
+            padding: 12px;
+            background: repeating-linear-gradient(45deg, #17132a, #17132a 12px, #1c1733 12px, #1c1733 24px)
+        }
+
+        .hist {
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--mu)
+        }
+
+        .hist div {
+            padding: 6px 0;
+            border-top: 1px solid var(--line)
+        }
+
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px
+        }
+
+        .plan {
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 16px
+        }
+
+        .plan b {
+            font-size: 26px;
+            display: block
+        }
+
+        .plan ul {
+            list-style: none;
+            color: var(--mu);
+            font-size: 14px;
+            margin: 10px 0 14px
+        }
+
+        .plan.h {
+            border-color: var(--ac)
+        }
+
+        @media(max-width:620px) {
+            .plans {
+                grid-template-columns: 1fr
+            }
+        }
+
+        #toasts {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: grid;
+            gap: 8px
+        }
+
+        .ts {
+            background: #fff;
+            color: #111;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 14px;
+            animation: ti .3s
+        }
+
+        @keyframes ti {
+            from {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+
+            *,
+            *:before,
+            *:after {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+    </style>
+</head>
+
+<body class="demo-auth-pending">
+    <header id="hd">
+        <div class="wrap">
+            <nav>
+                <a class="logo" href="#top"><svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="brand-bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#805cff"/><stop offset="1" stop-color="#20dcb2"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#brand-bg)"/><path d="M16 5.5c-5.7 0-9.5 4.3-9.5 10 0 4.7 3.6 8.7 9.5 11 5.9-2.3 9.5-6.3 9.5-11 0-5.7-3.8-10-9.5-10Z" fill="#f8f7ff"/><path d="M9.6 15.3c1.4-2.1 3.7-2 5-.1-.9 2.8-3.3 4-5 .1Zm7.8-.1c1.3-1.9 3.6-2 5 .1-1.7 3.9-4.1 2.7-5-.1Z" fill="#47328b"/><path d="M13.5 21c1.6 1 3.4 1 5 0" fill="none" stroke="#47328b" stroke-linecap="round" stroke-width="1.4"/><circle cx="16" cy="3.5" r="1.2" fill="#fff"/></svg>Alien.ai</a>
+                <button class="burger" id="bg" aria-label="Menu"
+                    aria-expanded="false"><span></span><span></span><span></span></button>
+                <div class="menu" id="mn">
+                    <a href="#" data-open="contest">Content Contest</a>
+                    <div class="dd"><button>AI Video Tools</button>
+                        <div class="pan" id="d-tools"></div>
+                    </div>
+                    <div class="dd"><button>Create by Style</button>
+                        <div class="pan" id="d-style"></div>
+                    </div>
+                    <div class="dd"><button>AI Models</button>
+                        <div class="pan" id="d-model"></div>
+                    </div>
+                    <a href="info.html?page=pricing">Pricing</a>
+                    <div class="dd lang"><button>English</button>
+                        <div class="pan" style="right:0;left:auto;min-width:140px"><a href="#"
+                                data-toast="English is active">English</a><a href="#"
+                                data-toast="Русский coming soon">Русский</a></div>
+                    </div>
+                    <a class="btn p" href="#" data-open="create">Get Started</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main id="top">
+        <div class="hero">
+            <div class="wrap">
+                <h1>Best AI Video Generator For <em>Long-Form</em> Video Creation</h1>
+                <p class="sub">Create complete AI videos up to 50 minutes long. Turn ideas, scripts, or stories into
+                    finished videos with Alien.ai. Free to try, no credit card required.</p>
+                <a class="btn p" href="#" data-open="create">Create your first video for free</a>
+                <div class="stage" id="stage">
+                    <div class="scene on" style="background:linear-gradient(135deg,#2b1b6e,#d4569a)"><video
+                            src="one.mp4" autoplay muted loop playsinline></video>
+                        <span>Scene 1 · The
+                            sleepy dragon</span>
+                    </div>
+                    <div class="scene" style="background:linear-gradient(135deg,#0f5e5a,#e6c15a)"><video src="two.mp4"
+                            autoplay muted loop playsinline></video><span>Scene 2 · A
+                            journey begins</span></div>
+                    <div class="scene" style="background:linear-gradient(135deg,#1c1c3a,#4f8dff)"><video src="three.mp4"
+                            autoplay muted loop playsinline></video><span>Scene 3 · Over
+                            the moon sea</span></div>
+                    <button class="play" id="pl" aria-label="Play or pause preview"></button>
+                    <div class="bar" id="br"></div>
+                </div>
+            </div>
+        </div>
+
+        <section>
+            <div class="wrap">
+                <h2 class="rv">What do you want to create with AI?</h2>
+                <p class="lead rv">Most AI animation tools produce choppy motion or single disconnected clips. Alien.ai
+                    generates smooth, multi-scene animations where characters move naturally and visuals stay consistent
+                    throughout your story.</p>
+                <div class="grid7" id="g7"></div>
+                <div class="more"><a class="btn g" href="#" data-open="create">See everything you can create</a></div>
+                <div class="mq">
+                    <div class="lab">Featured models</div>
+                    <div class="track" id="mq"></div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="wrap">
+                <h2 class="rv">An AI video generator built for complete videos, not just clips</h2>
+                <p class="lead rv">Designed for videos that feel finished, watchable, and thoughtfully put together,
+                    from the first scene to the last.</p>
+                <div class="feat rv">
+                    <div class="fv"></i><span><img src="rn.jfif" ></span>
+                    </div>
+                    <div>
+                        <h3>Let our story templates do the heavy lifting</h3>
+                        <p>Starting from a blank page is hard. Choose from templates for kids stories, faith messages,
+                            lessons, explainers, comedy and more. Each gives you a working structure so you can focus on
+                            the story, not the format.</p><br><a class="btn g" href="#" data-open="create">Try a
+                            template</a>
+                    </div>
+                </div>
+                <div class="feat rv">
+                    <div class="fv"></i><span><img src="rt.jfif" ><span>🧑‍🚀</span>
+                    </div>
+                    <div>
+                        <h3>AI-powered characters bring your vision to life</h3>
+                        <p>Create consistent, expressive characters that evolve with your story. Alien.ai keeps
+                            character continuity across scenes, so protagonists keep their look and personality from
+                            start to finish.</p>
+                    </div>
+                </div>
+                <div class="feat rv">
+                    <div class="fv"><span><img src="Ai.jfif" ><span>🎞️</span>
+                    </div>
+                    <div>
+                        <h3>Seamless scene transitions for professional results</h3>
+                        <p>Connect scenes with transitions that maintain visual coherence. Lighting, perspective, and
+                            style adjust automatically for smooth, cinematic flow between segments.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="wrap">
+                <h2 class="rv">Used by creators around the world</h2><br>
+                <div class="stats rv">
+                    <div class="stat"><b data-n="50">0</b><span>Minutes of video created</span></div>
+                    <div class="stat"><b data-n="30">0</b><span>Videos generated</span></div>
+                    <div class="stat"><b data-n="20">0</b><span>Creators worldwide</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="wrap">
+                <h2 class="rv">Explore Alien.ai's AI video tools</h2>
+                <p class="lead rv">Start with a single tool or combine several to create, refine, and localise videos in
+                    one place.</p>
+                <div class="tools" id="tl"></div>
+                <p class="lead" style="margin:30px auto 20px">All tools work together in a single workflow, so you can
+                    move from creation to final polish without switching platforms.</p>
+                <div class="more" style="margin:0"><a class="btn g" href="#" data-open="create">See all tools</a></div>
+            </div>
+        </section>
+
+        <section>
+            <div class="wrap">
+                <h2 class="rv">Trusted by creators building real videos</h2>
+            </div><br>
+            <div class="tm">
+                <div class="track" id="tt"></div>
+            </div>
+        </section>
+
+        <div class="cta">
+            <div class="wrap">
+                <h2 class="rv">Create full-length story videos with AI</h2>
+                <p class="lead rv" style="margin-bottom:28px">Start for free and see how Alien.ai fits your workflow.
+                    Upgrade only when you're ready.</p>
+                <a class="btn p" href="#" data-open="create">Start Free</a>
+            </div>
+            <div class="moon"></div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="wrap">
+            <div class="fg">
+                <div><a class="logo" href="#top"><svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="brand-bg-footer" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#805cff"/><stop offset="1" stop-color="#20dcb2"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#brand-bg-footer)"/><path d="M16 5.5c-5.7 0-9.5 4.3-9.5 10 0 4.7 3.6 8.7 9.5 11 5.9-2.3 9.5-6.3 9.5-11 0-5.7-3.8-10-9.5-10Z" fill="#f8f7ff"/><path d="M9.6 15.3c1.4-2.1 3.7-2 5-.1-.9 2.8-3.3 4-5 .1Zm7.8-.1c1.3-1.9 3.6-2 5 .1-1.7 3.9-4.1 2.7-5-.1Z" fill="#47328b"/><path d="M13.5 21c1.6 1 3.4 1 5 0" fill="none" stroke="#47328b" stroke-linecap="round" stroke-width="1.4"/><circle cx="16" cy="3.5" r="1.2" fill="#fff"/></svg>Alien.ai</a>
+                    <p style="margin-top:12px">Explore Alien.ai</p>
+                    <div class="stores"><a href="info.html?page=android">Android</a><a
+                            href="info.html?page=ios">iOS</a></div>
+                </div>
+                <div>
+                    <h5>Product</h5>
+                    <ul>
+                        <li><a href="info.html?page=tools">AI Video Tools</a></li>
+                        <li><a href="info.html?page=templates">Video Templates</a></li>
+                        <li><a href="info.html?page=story-to-video">Story to Video</a></li>
+                        <li><a href="info.html?page=text-to-video">Text to Video</a></li>
+                        <li><a href="info.html?page=image-to-video">Image to Video</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5>Resources</h5>
+                    <ul>
+                        <li><a href="info.html?page=academy">Academy</a></li>
+                        <li><a href="info.html?page=faq">FAQ</a></li>
+                        <li><a href="info.html?page=pricing">Pricing</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5>Company</h5>
+                    <ul>
+                        <li><a href="info.html?page=about">About us</a></li>
+                        <li><a href="info.html?page=contact">Contact us</a></li>
+                        <li><a href="info.html?page=partnership">Partnership</a></li>
+                        <li><a href="info.html?page=affiliate">Affiliate Program</a></li>
+                        <li><a href="info.html?page=rules">Community Rules</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copy"><span>© 2026 Alien.ai. All rights reserved.</span><span><a
+                        href="info.html?page=terms">Terms of Service</a> · <a
+                        href="info.html?page=privacy">Privacy policy</a> · <a
+                        href="info.html?page=cookies">Cookie Policy</a> · <a
+                        href="info.html?page=refunds">Refund Policy</a></span></div>
+        </div>
+    </footer>
+
+    <div class="ov" id="o-create" role="dialog" aria-modal="true" aria-label="Create">
+        <div class="md">
+            <button class="x" data-close aria-label="Close">×</button>
+            <h3 style="font-size:24px">Create with Alien.ai</h3>
+            <div class="tabs" id="tb"><button class="on" data-m="Text to video">Text to video</button><button
+                    data-m="Image to video">Image to video</button><button data-m="Image generation">Image</button>
+            </div>
+            <textarea id="pr" placeholder="Describe your story, scene, or idea…"></textarea>
+            <div class="err" id="er"></div>
+            <label class="up" id="upl" style="display:none"><input type="file" id="fi" accept="image/*,video/*"
+                    hidden><span id="upt">Click to upload an image or video</span></label>
+            <div class="row">
+                <div><small style="color:var(--mu)">Aspect ratio</small>
+                    <div class="ar" id="ar"><button class="on">16:9</button><button>9:16</button><button>1:1</button>
+                    </div>
+                </div>
+                <div><small style="color:var(--mu)">Length</small><select id="ln">
+                        <option>30 seconds</option>
+                        <option>5 minutes</option>
+                        <option>20 minutes</option>
+                        <option>50 minutes</option>
+                    </select></div>
+                <div><small style="color:var(--mu)">Style</small><select id="sy">
+                        <option>Realistic</option>
+                        <option>3D Cartoon</option>
+                        <option>Comic</option>
+                        <option>Picture Book</option>
+                    </select></div>
+            </div>
+            <button class="btn p" id="gn" style="width:100%;justify-content:center">Generate</button>
+            <div class="prog" id="pg" style="display:none"><i id="pb"></i></div>
+            <div id="ps" style="color:var(--mu);font-size:13px"></div>
+            <div class="res" id="rs">
+                <div class="pv" id="pv"></div>
+                <p style="font-size:13px;color:var(--mu)">Demo mode: no AI backend is connected, so this is a
+                    placeholder preview, not a generated video. Connect a provider in <code>generateMedia()</code>.</p>
+                <br><button class="btn g" id="dl">Download request (JSON)</button>
+            </div>
+            <div class="hist" id="hs"></div>
+        </div>
+    </div>
+
+    <div class="ov" id="o-pricing" role="dialog" aria-modal="true" aria-label="Pricing">
+        <div class="md"><button class="x" data-close aria-label="Close">×</button>
+            <h3 style="font-size:24px">Pricing</h3>
+            <p style="color:var(--mu)">Placeholder plans. Replace with your real pricing.</p>
+            <div class="plans">
+                <div class="plan"><b>Free</b>
+                    <ul>
+                        <li>Daily credits</li>
+                        <li>Short videos</li>
+                    </ul><button class="btn g" data-open="create">Start Free</button>
+                </div>
+                <div class="plan h"><b>Pro</b>
+                    <ul>
+                        <li>Long-form up to 50 min</li>
+                        <li>All AI models</li>
+                    </ul><button class="btn p" data-toast="Checkout isn't connected yet">Choose Pro</button>
+                </div>
+                <div class="plan"><b>Studio</b>
+                    <ul>
+                        <li>Team seats</li>
+                        <li>Priority queue</li>
+                    </ul><button class="btn g" data-toast="Checkout isn't connected yet">Choose Studio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ov" id="o-contest" role="dialog" aria-modal="true" aria-label="Contest">
+        <div class="md"><button class="x" data-close aria-label="Close">×</button>
+            <h3 style="font-size:24px">Content Creation Contest</h3>
+            <p style="color:var(--mu);margin:10px 0 18px">Contest details will be announced here. Create a video now to
+                get ready.</p><button class="btn p" data-open="create">Create a video</button>
+        </div>
+    </div>
+    <div id="toasts" aria-live="polite"></div>
+
+    <script src="demo-auth.js"></script>
+    <script>
+        const $ = (s, c = document) => c.querySelector(s), $$ = (s, c = document) => [...c.querySelectorAll(s)];
+        const toast = t => { const e = document.createElement('div'); e.className = 'ts'; e.textContent = t; $('#toasts').append(e); setTimeout(() => e.remove(), 2600) };
+        try {
+            if (window.AlienDemoAuth.getUsername()) {
+                window.location.replace('dashboard.html');
+            } else {
+                document.body.classList.remove('demo-auth-pending');
+            }
+        } catch (error) {
+            console.error('Could not read the demo login session:', error);
+            document.body.classList.remove('demo-auth-pending');
+        }
+        const tools = [["Story to Video", "Turn stories into structured, scene-based videos."], ["Text to Video", "Create videos directly from simple text descriptions."], ["Script to Video", "Convert written scripts into ready-to-publish videos."], ["Long Video Generator", "Long-form videos that stay coherent from start to finish."], ["AI Animation Generator", "Generate animated videos without manual animation."], ["AI Avatar Video", "Videos with AI avatars that present your content."], ["Music to Video", "Turn music into visuals that match mood and rhythm."], ["Image to Video", "Animate images and illustrations into moving scenes."], ["AI Video Editor", "Edit and refine videos with a guided interface."], ["AI Voice Cloning", "Natural voiceovers using your own voice."], ["Lip Sync Videos", "Sync mouth movements accurately to spoken audio."], ["AI Subtitle Generator", "Accurate subtitles for any video, automatically."]];
+        const styles = ["Jingles", "Realistic", "Comic", "Animals", "Illustration", "Suspense", "3D Cartoon", "Picture Book", "3D Cute"];
+        const models = ["Nano Banana", "VEO 3", "Sora 2", "Gemini", "Hailuo", "Kling 3.0", "Midjourney", "Qwen", "Seedance 2.5"];
+        const cards = [["Jingles", "#7b2ff7,#f107a3", "three.mp4"], ["Kids story", "#ff9a44,#fc6076", "video_30cc8f461edf.mp4"], ["One click video", "#0f9b8e,#3a6073", "video_893e9fcd0105.mp4"], ["Animated cartoon", "#f7971e,#ffd200", "video_9a75e62e8b76.mp4"], ["Religious story", "#4568dc,#b06ab3", "video_a9130297efb6.mp4"], ["Image to video", "#11998e,#38ef7d", "video_aa8de84054c8.mp4"], ["Explainer", "#614385,#516395", "video_fa345299bbcd.mp4"]];
+        const people = [["Sarah Chen", "Content Creator", "My daughter connected with the stories right away. Simple language and cute visuals make it perfect."], ["Michael Rodriguez", "Marketing Director", "The characters are charming and the pacing suits bedtime. My kids genuinely love it."], ["Emily Watson", "Educator", "The stories are fun, gentle, and positive. They help my son wind down after a long day."], ["David Kim", "Parent & Designer", "Scenes stay consistent from start to finish, which is what I needed for longer videos."], ["Jessica Thompson", "Early Childhood Teacher", "Imaginative without being overstimulating, and age-appropriate throughout."], ["Robert Anderson", "Software Engineer", "My 4-year-old loves the colorful scenes and the little lessons hidden in each story."]];
+        const open_ = id => { $('#o-' + id).classList.add('on'); document.body.style.overflow = 'hidden' };
+        const close_ = () => { $$('.ov.on').forEach(o => o.classList.remove('on')); document.body.style.overflow = '' };
+        $('#d-tools').innerHTML = tools.slice(0, 11).map(t => `<a href="#" data-open="create">${t[0]}</a>`).join('') + '<a href="#" data-open="create">View all tools</a>';
+        $('#d-style').innerHTML = styles.map(s => `<a href="#" data-style="${s}">${s}</a>`).join('');
+        $('#d-model').innerHTML = models.map(s => `<a href="#" data-toast="${s} will be available once an API is connected">${s}</a>`).join('');
+        $('#g7').innerHTML = cards.map(c => `<button class="cc" style="--bgc:linear-gradient(145deg,${c[1]})" data-open="create" data-prompt="${c[0]}"><video class="cc-video" src="${c[2]}" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video><b>${c[0]}</b><span class="go">Generate</span></button>`).join('');
+        const cardVideoObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                video.play().catch(error => {
+                    if (error.name !== 'AbortError') console.error('Unable to play card preview video:', error);
+                });
+            } else {
+                video.pause();
+            }
+        }), { rootMargin: '100px' });
+        $$('.cc-video').forEach(video => cardVideoObserver.observe(video));
+        const mq = models.map(m => `<span class="chip">${m}</span>`).join(''); $('#mq').innerHTML = mq + mq;
+        $('#tl').innerHTML = tools.map(t => `<a class="tool rv" href="#" data-open="create" data-prompt="${t[0]}"><h4>${t[0]}</h4><p>${t[1]}</p></a>`).join('');
+        const tc = people.map(p => `<div class="tc"><p>${p[2]}</p><div><span class="av">${p[0][0]}</span><span>${p[0]}<small>${p[1]}</small></span></div></div>`).join(''); $('#tt').innerHTML = tc + tc;
+        /* header + nav */
+        addEventListener('scroll', () => $('#hd').classList.toggle('sc', scrollY > 20), { passive: true });
+        $('#bg').onclick = e => { const on = $('#mn').classList.toggle('on'); e.currentTarget.classList.toggle('on', on); e.currentTarget.setAttribute('aria-expanded', on) };
+        $$('.dd>button').forEach(b => b.onclick = e => { e.stopPropagation(); const d = b.parentElement, w = d.classList.contains('open'); $$('.dd').forEach(x => x.classList.remove('open')); if (!w) d.classList.add('open') });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.dd')) $$('.dd').forEach(x => x.classList.remove('open'));
+            const t = e.target.closest('[data-open],[data-toast],[data-style],[data-close]'); if (!t) return;
+            if (t.matches('a')) e.preventDefault();
+            if (t.dataset.open === 'create' || t.dataset.style || t.dataset.prompt) {
+                window.location.assign('login.html');
+                return;
+            }
+            if (t.dataset.open) {
+                window.location.assign('dashboard.html');
+                return;
+            }
+            if (t.hasAttribute('data-close') || t === e.target && t.classList.contains('ov')) return close_();
+            if (t.dataset.toast) toast(t.dataset.toast);
+        });
+        $$('.ov').forEach(o => o.addEventListener('click', e => { if (e.target === o) close_() }));
+        addEventListener('keydown', e => { if (e.key === 'Escape') close_() });
+        /* reveal + counters */
+        const io = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; e.target.classList.add('in'); $$('[data-n]', e.target).forEach(c => { const n = +c.dataset.n; let s = 0; const t = setInterval(() => { s += n / 40; c.textContent = Math.min(Math.round(s), n) + 'M+'; if (s >= n) clearInterval(t) }, 30) }); io.unobserve(e.target) }), { threshold: .15 });
+        $$('.rv').forEach(e => io.observe(e));
+        /* hero preview */
+        const sc = $$('.scene'), st = $('#stage'); let si = 0, paused = false, pr = 0;
+        const sceneVideos = sc.map(scene => $('video', scene));
+        setInterval(() => {
+            if (paused) return;
+            pr += 1;
+            $('#br').style.width = (pr % 30) / 30 * 100 + '%';
+            if (pr % 30 === 0) {
+                sc[si].classList.remove('on');
+                sceneVideos[si].pause();
+                si = (si + 1) % sc.length;
+                sc[si].classList.add('on');
+                sceneVideos[si].play();
+            }
+        }, 100);
+        $('#pl').onclick = () => {
+            paused = !paused;
+            st.classList.toggle('paused', paused);
+            if (paused) sceneVideos[si].pause();
+            else sceneVideos[si].play();
+            $('#pl').style.opacity = paused ? 1 : .5;
+        }
+        /* create modal */
+        let mode = 'Text to video', ratio = '16:9'; const hist = [];
+        $$('#tb button').forEach(b => b.onclick = () => { $$('#tb button').forEach(x => x.classList.remove('on')); b.classList.add('on'); mode = b.dataset.m; $('#upl').style.display = mode === 'Text to video' ? 'none' : 'block' });
+        $$('#ar button').forEach(b => b.onclick = () => { $$('#ar button').forEach(x => x.classList.remove('on')); b.classList.add('on'); ratio = b.textContent });
+        $('#fi').onchange = e => { const f = e.target.files[0]; $('#upt').textContent = f ? f.name : 'Click to upload an image or video' };
+        /* INTEGRATION POINT: replace the body with a real API call (e.g. fetch('/api/generate',{method:'POST',body:JSON.stringify(req)})) and return {url}. */
+        async function generateMedia(req, onProgress) { for (let i = 1; i <= 10; i++) { await new Promise(r => setTimeout(r, 350)); onProgress(i * 10) } return { url: null, demo: true } }
+        let last = null;
+        $('#gn').onclick = async () => {
+            const p = $('#pr').value.trim(), er = $('#er'); er.textContent = '';
+            if (p.length < 8) return er.textContent = 'Enter at least 8 characters describing your video.';
+            if (mode !== 'Text to video' && !$('#fi').files.length) return er.textContent = 'Upload a file for ' + mode.toLowerCase() + '.';
+            const req = { mode, prompt: p, ratio, length: $('#ln').value, style: $('#sy').value, file: $('#fi').files[0]?.name || null }; last = req;
+            const b = $('#gn'); b.disabled = true; b.textContent = 'Generating…'; $('#pg').style.display = 'block'; $('#rs').classList.remove('on');
+            try {
+                await generateMedia(req, v => { $('#pb').style.width = v + '%'; $('#ps').textContent = v < 100 ? `Rendering scenes… ${v}%` : 'Finishing…' });
+                $('#pv').textContent = `Placeholder preview · ${req.style} · ${req.ratio} · ${req.length}`; $('#pv').style.aspectRatio = ratio.replace(':', '/'); $('#rs').classList.add('on');
+                hist.unshift(req); $('#hs').innerHTML = '<b>Saved projects (this session)</b>' + hist.slice(0, 5).map(h => `<div>${h.mode} · ${h.prompt.slice(0, 50)}${h.prompt.length > 50 ? '…' : ''}</div>`).join(''); toast('Demo preview ready')
+            }
+            catch (e) { er.textContent = 'Generation failed. Check your connection and try again.' }
+            b.disabled = false; b.textContent = 'Generate'; $('#ps').textContent = ''
+        };
+        $('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(last, null, 2)], { type: 'application/json' })); a.download = 'alien-request.json'; a.click(); toast('Request downloaded') };
+    </script>
+</body>
+
+</html>
