@@ -40,6 +40,16 @@
             saveSession({ ...data.session, user: data.user });
             return data.user;
         },
+        async signUp(email, password, displayName) {
+            const data = await request("/auth/register", {
+                method: "POST",
+                body: JSON.stringify({ email: email.trim(), password, display_name: displayName.trim() || undefined })
+            });
+            if (data?.session?.access_token) {
+                saveSession({ ...data.session, user: data.user });
+            }
+            return data;
+        },
         async signOut() {
             try {
                 await request("/auth/logout", { method: "POST" });
