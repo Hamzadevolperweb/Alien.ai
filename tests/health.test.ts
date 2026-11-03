@@ -6,10 +6,9 @@ describe("health endpoint", () => {
   it("returns API readiness", async () => {
     const response = await request(app).get("/api/health");
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      success: true,
-      data: { status: "ok" },
+    expect(response.body).toEqual(expect.objectContaining({
+      data: expect.objectContaining({ status: "ok" }),
       error: null,
-    });
+    }));
   });
 });

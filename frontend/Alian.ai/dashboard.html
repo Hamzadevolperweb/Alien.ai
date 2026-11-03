@@ -147,21 +147,25 @@ body.auth-pending{visibility:hidden}
 <div id="toasts" aria-live="polite"></div>
 
 <script src="demo-auth.js"></script>
+<script src="supabase-config.js"></script>
 <script>
 try {
-  const username = window.AlienDemoAuth.getUsername();
-  if (!username) {
-    window.location.replace("index.html");
-  } else {
+  window.AlienSupabaseConfig.load().catch(error => console.error(error instanceof Error ? error.message : "Could not load Supabase configuration."));
+  window.AlienDemoAuth.refreshSession().then(session => {
+    if (!session) {
+      window.location.replace("login.html");
+      return;
+    }
+    const username = session.user?.email || session.user?.id;
     document.getElementById("userEmail").textContent = username;
     document.getElementById("userEmail").title = username;
     document.getElementById("accountAvatar").textContent = username.charAt(0).toUpperCase();
     document.getElementById("accountAvatar").title = username;
     document.body.classList.remove("auth-pending");
-  }
+  });
 } catch (error) {
-  console.error("Could not read the demo login session:", error);
-  window.location.replace("index.html");
+  console.error("Could not restore the login session:", error);
+  window.location.replace("login.html");
 }
 </script>
 <script>
@@ -170,20 +174,23 @@ const CONFIG={
   API_BASE:"/api",
   MAX_UPLOAD_MB:50, MAX_ATTACH:{frames:2,ingredients:3,image:4},
   IMAGE_RATIOS:["16:9","4:3","1:1","3:4","9:16"], VIDEO_RATIOS:["16:9","9:16"], QTY:[1,2,3,4],
-  /* Placeholder entries only. Replace with models your API actually serves. */
-  IMAGE_MODELS:[{id:"image-model-1",name:"Image model 1 (placeholder)"},{id:"image-model-2",name:"Image model 2 (placeholder)"}],
+  IMAGE_MODELS:[{id:"configured-image-model",name:"Configured image model"}],
   VIDEO_MODELS:[
-    {id:"video-model-1",name:"Video model 1 (placeholder)",res:["360p","720p"],dur:[4,6,8,10]},
-    {id:"video-model-2",name:"Video model 2 (placeholder)",res:["720p"],dur:[4,8]}]
+    {id:"gen4.5",name:"Runway Gen-4.5",res:["720p"],dur:[5,8,10]}]
 };
 /* ============ 2. API SERVICE — the only place that talks to a backend ============ */
 const api={
-  async request(path,options={}){const s=window.AlienDemoAuth.getSession();const h=new Headers(options.headers||{});if(s?.access_token)h.set("Authorization","Bearer "+s.access_token);if(options.body&&!(options.body instanceof FormData))h.set("Content-Type","application/json");const r=await fetch(CONFIG.API_BASE+path,{...options,headers:h});const b=await r.json().catch(()=>null);if(!r.ok)throw new Error(b?.error?.message||`Request failed (${r.status})`);return b?.data},
+  async request(path,options={}){const s=window.AlienDemoAuth.getSession();const h=new Headers(options.headers||{});if(s?.access_token)h.set("Authorization","Bearer "+s.access_token);if(options.body&&!(options.body instanceof FormData))h.set("Content-Type","application/json");const r=await fetch(CONFIG.API_BASE+path,{...options,headers:h,credentials:'include'});const b=await r.json().catch(()=>null);if(!r.ok)throw new Error(b?.error?.message||`Request failed (${r.status})`);return b?.data},
   async uploadMedia(file){const fd=new FormData();fd.append("file",file);return this.request("/uploads",{method:"POST",body:fd})},
   async fetchAssets(){return []},
-  async submitGeneration(req){const image=req.mode==="image";const duration=req.durationSeconds<=7?5:10;const result=await this.request(image?"/generations/image":"/generations/video",{method:"POST",body:JSON.stringify(image?{prompt:req.prompt,size:req.aspectRatio==="1:1"?"1024x1024":"auto"}:{prompt:req.prompt,ratio:req.aspectRatio==="9:16"?"720:1280":"1280:720",duration})});return{jobId:result.id,data:result}},
+  async submitGeneration(req){const image=req.mode==="image";const duration=req.durationSeconds<=7?5:10;const requestId=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2));const result=await this.request(image?"/generations/image":"/generations/video",{method:"POST",body:JSON.stringify(image?{prompt:req.prompt,size:req.aspectRatio==="1:1"?"1024x1024":"auto"}:{prompt:req.prompt,ratio:req.aspectRatio==="9:16"?"720:1280":"1280:720",duration:req.resolution==="720p"?10:duration,imageAssetId:req.imageAssetId,requestId})});if(Number.isFinite(result.credits_balance))updateCredits(result.credits_balance);return{jobId:result.id,data:result}},
   async getResult(jobId){return this.request("/generations/"+encodeURIComponent(jobId))}
 };
+const updateCredits=balance=>{
+  const el=document.getElementById('demoCredits');
+  if(el&&Number.isFinite(Number(balance)))el.textContent=Number(balance).toLocaleString();
+};
+api.request('/credits').then(data=>updateCredits(data.balance)).catch(()=>updateCredits(1000));
 /* ============ 3. STATE ============ */
 const $=(s,c=document)=>c.querySelector(s),$$=(s,c=document)=>[...c.querySelectorAll(s)];
 const toast=t=>{const e=document.createElement('div');e.className='ts';e.textContent=t;$('#toasts').append(e);setTimeout(()=>e.remove(),3200)};
@@ -218,7 +225,7 @@ function renderPop(){
   if(v){
     h+=`<div class="seg" style="grid-template-columns:1fr 1fr">${["360p","720p"].map(r=>btn(c.res===r,`data-res="${r}"`,r,!m.res.includes(r))).join('')}</div>`;
     h+=`<div class="seg" style="grid-template-columns:repeat(4,1fr)">${[4,6,8,10].map(d=>btn(c.dur===d,`data-dur="${d}"`,d+'s',!m.dur.includes(d))).join('')}</div>`}
-  h+=`<div class="seg" style="grid-template-columns:repeat(4,1fr)">${CONFIG.QTY.map(q=>btn(c.qty===q,`data-qty="${q}"`,'×'+q)).join('')}</div><div class="cr">Credits: not connected yet</div>`;
+  h+=`<div class="seg" style="grid-template-columns:repeat(4,1fr)">${CONFIG.QTY.map(q=>btn(c.qty===q,`data-qty="${q}"`,'×'+q)).join('')}</div><div class="cr">Demo credits: <strong id="demoCredits">1000</strong></div>`;
   $('#pop').innerHTML=h;
 }
 const popOpen=on=>{$('#pop').classList.toggle('on',on);$('#sum').setAttribute('aria-expanded',on);if(on)renderPop()};
@@ -270,9 +277,12 @@ function ingest(files){const errs=[];let n=0;
   [...files].forEach(f=>{const t=f.type.startsWith('image/')?['Image','Images']:f.type.startsWith('video/')?['Video','Videos']:f.type.startsWith('audio/')?['Voice','Voices']:null;
     if(!t)return errs.push(`${f.name}: unsupported type`);
     if(f.size>CONFIG.MAX_UPLOAD_MB*1048576)return errs.push(`${f.name}: over ${CONFIG.MAX_UPLOAD_MB} MB`);
-    const a={id:'u'+Math.random().toString(36).slice(2),name:f.name,type:t[0],cat:t[1],url:URL.createObjectURL(f),ts:Date.now(),upload:true,local:true};
+    const a={id:'u'+Math.random().toString(36).slice(2),name:f.name,type:t[0],cat:t[1],url:URL.createObjectURL(f),ts:Date.now(),upload:true,local:true,assetId:null};
     S.assets.push(a);S.sel=a.id;n++;
-    api.uploadMedia(f).catch(e=>{if(!e.notConnected)toast('Upload failed: '+f.name)})}); // backend hook
+    api.uploadMedia(f).then(uploaded=>{
+      a.assetId=uploaded.id;
+      a.local=false;
+    }).catch(e=>{toast('Upload failed: '+f.name+': '+e.message)});}); // backend hook
   $('#ue').textContent=errs.join(' · ');if(n){toast(`${n} file${n>1?'s':''} added locally (not saved to a server)`);renderPicker();renderWs()}
   return n}
 $('#fi').onchange=e=>{ingest(e.target.files);e.target.value=''};
@@ -285,7 +295,7 @@ function renderWs(){
   const up=S.assets.filter(a=>a.upload);
   if(!S.outputs.length&&!up.length){ws.innerHTML=`<div class="empty"><svg viewBox="0 0 9 10" shape-rendering="crispEdges">${PX.map((r,y)=>[...r].map((c,x)=>c==='#'?`<rect x="${x}" y="${y}" width="1" height="1"/>`:'').join('')).join('')}</svg>Start creating or drop media</div>`;return}
   ws.innerHTML='<div class="grid">'+S.outputs.map(o=>o.pending?`<div class="it"><div class="spin" style="aspect-ratio:${o.ratio.replace(':','/')}"><i></i></div><div class="bd"><p>${esc(o.prompt)}</p><span class="tag">Submitting…</span></div></div>`
-   :`<div class="it">${o.url?(o.url.includes('.mp4')||o.type==='video'?`<video class="th" src="${o.url}" controls style="aspect-ratio:${o.ratio.replace(':','/')}"></video>`:`<img class="th" src="${o.url}" alt="${esc(o.prompt)}" style="aspect-ratio:${o.ratio.replace(':','/')}">`):`<div class="th" style="aspect-ratio:${o.ratio.replace(':','/')}">${o.status==='failed'? 'Generation failed.':esc(o.status||'Processing')}</div>`}<button class="rm" data-o="${o.id}" aria-label="Remove">✕</button><div class="bd"><p>${esc(o.prompt)}</p><span class="tag w">${esc(o.status||'Submitted')}</span>${o.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>`).join('')
+   :`<div class="it">${o.url?(o.url.includes('.mp4')||o.type==='video'?`<video class="th" src="${o.url}" controls style="aspect-ratio:${o.ratio.replace(':','/')}"></video>`:`<img class="th" src="${o.url}" alt="${esc(o.prompt)}" style="aspect-ratio:${o.ratio.replace(':','/')}">`):`<div class="th" style="aspect-ratio:${o.ratio.replace(':','/')}">${o.status==='failed'? 'Generation failed.':esc(o.status||'Processing')}</div>`}<button class="rm" data-o="${o.id}" aria-label="Remove">✕</button><div class="bd"><p>${esc(o.prompt)}</p><span class="tag w">${esc(o.status||'Submitted')}</span>${o.tags.map(t=>`<span class="tag">${t}</span>`).join('')}${o.url?` <a class="tag" href="${o.url}" target="_blank" rel="noopener" download>Download video</a>`:''}</div></div>`).join('')
    +up.map(a=>`<div class="it">${a.type==='Image'?`<img class="th" src="${a.url}" alt="${esc(a.name)}" style="aspect-ratio:4/3">`:a.type==='Video'?`<video class="th" src="${a.url}" controls style="aspect-ratio:4/3"></video>`:`<div class="th" style="aspect-ratio:4/3"><audio src="${a.url}" controls></audio></div>`}<div class="bd"><p>${esc(a.name)}</p><span class="tag">Local upload</span></div></div>`).join('')+'</div>';
 }
 ws.onclick=e=>{const b=e.target.closest('[data-o]');if(b){S.outputs=S.outputs.filter(o=>o.id!==b.dataset.o);renderWs()}};
@@ -298,7 +308,11 @@ $('#comp').onsubmit=async e=>{e.preventDefault();if(S.busy)return;
   const tags=[v?`${c.res} · ${c.dur}s`:'Image',req.aspectRatio,'×'+c.qty,...(S.attached.length?[S.attached.length+' attached']:[])];
   const o={id:'o'+Date.now(),prompt:p,ratio:req.aspectRatio,pending:true,tags};S.outputs.unshift(o);
   S.busy=true;$('#go').disabled=true;renderWs();
-  try{const r=await api.submitGeneration(req);o.pending=false;o.jobId=r?.jobId;o.status=r?.data?.status||'submitted';o.type=req.mode;
+  try{const imageAsset=S.attached.find(a=>a.type==='Image');
+    const body=v&&imageAsset?.assetId
+      ? {...req,imageAssetId:imageAsset.assetId}
+      : req;
+    const r=await api.submitGeneration(body);o.pending=false;o.jobId=r?.jobId;o.status=r?.data?.status||'submitted';o.type=req.mode;
     if(o.status==='completed'&&r.data.output_media_path){const media=await api.request('/media/'+encodeURIComponent(r.data.output_media_path));o.url=media.signed_url}
     else if(o.status==='completed'&&r.data.output_url){o.url=r.data.output_url}
     const poll=async()=>{if(!o.jobId||o.status==='completed'||o.status==='failed')return;try{const result=await api.getResult(o.jobId);o.status=result.status;o.type=req.mode;if(result.output_media_path){const media=await api.request('/media/'+encodeURIComponent(result.output_media_path));o.url=media.signed_url}else if(result.output_url){o.url=result.output_url}renderWs();if(['queued','processing'].includes(result.status))setTimeout(poll,3000)}catch(err){er.textContent='Could not refresh generation status: '+err.message}};
@@ -313,7 +327,7 @@ $('#agent').onclick=e=>{S.agent=!S.agent;e.currentTarget.classList.toggle('on',S
 /* top menu, global dismissal */
 $('#more').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('on')};
 $('#clr').onclick=()=>{S.outputs=[];S.attached=[];S.assets=S.assets.filter(a=>!a.upload);$('#menu').classList.remove('on');renderAtt();renderWs();toast('Session cleared')};
-$('#logout').onclick=()=>{try{window.AlienDemoAuth.signOut();window.location.replace('index.html')}catch(error){console.error('Demo logout failed:',error);toast('Could not log out. Please enable browser storage and try again.')}};
+$('#logout').onclick=async()=>{await window.AlienDemoAuth.signOut();window.location.replace('login.html')};
 $('#navAll').onclick=()=>{ws.scrollTo({top:0,behavior:'smooth'})};
 document.addEventListener('click',e=>{popOpen(false);if(!e.target.closest('#menu'))$('#menu').classList.remove('on')});
 addEventListener('keydown',e=>{if(e.key==='Escape'){closePicker();popOpen(false);$('#menu').classList.remove('on')}});

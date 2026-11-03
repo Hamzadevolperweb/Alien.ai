@@ -1,19 +1,32 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { config, requireSupabaseConfig } from "../config.js";
+import { config } from "../config.js";
 import { ApiError } from "../errors.js";
 
-export function adminSupabase(): SupabaseClient {
-  requireSupabaseConfig();
-  return createClient(config.supabaseUrl, config.supabaseServiceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+let adminClient: SupabaseClient | null = null;
 
-export function publicSupabase(): SupabaseClient {
-  if (!config.supabaseUrl || !config.supabasePublishableKey) {
-    throw new ApiError(503, "CONFIGURATION_ERROR", "SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY must be configured.");
+export function getSupabaseAdmin(): SupabaseClient {
+  if (!config.supabaseUrl) {
+    throw new ApiError(503, "DATABASE_NOT_CONFIGURED", "SUPABASE_URL is not configured.");
   }
-  return createClient(config.supabaseUrl, config.supabasePublishableKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  let secret = config.supabaseSecretKey.trim().split(",")[0].trim();
+  if (
+    (secret.startsWith('"') && secret.endsWith('"'))
+    || (secret.startsWith("'") && secret.endsWith("'"))
+  ) {
+    secret = secret.slice(1, -1).trim();
+  } else if (secret.startsWith('"') || secret.startsWith("'")) {
+    secret = secret.slice(1).trim();
+  }
+  if (!secret) {
+    throw new ApiError(503, "DATABASE_NOT_CONFIGURED", "SUPABASE_SECRET_KEY is not configured.");
+  }
+  if (!secret.startsWith("eyJ") && !secret.startsWith("sb_secret_")) {
+    throw new ApiError(503, "DATABASE_CONFIGURATION_INVALID", "SUPABASE_SECRET_KEY is not in a valid Supabase secret-key format.");
+  }
+  if (!adminClient) {
+    adminClient = createClient(config.supabaseUrl, secret, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  return adminClient;
 }

@@ -1,108 +1,90 @@
 import { Router } from "express";
-import { z } from "zod";
+import rateLimit from "express-rate-limit";
+import { ApiError } from "../errors.js";
 import { requireAuth } from "../middleware/auth.js";
-import { adminSupabase, publicSupabase } from "../lib/supabase.js";
+import { config } from "../config.js";
+import { createDemoSession, DEMO_SESSION_COOKIE, DEMO_SESSION_MAX_AGE_MS } from "../lib/demo-auth.js";
 
 const router = Router();
+const databaseUnavailable = (_req: import("express").Request, _res: import("express").Response, next: import("express").NextFunction) =>
+  next(new ApiError(401, "AUTHENTICATION_REQUIRED", "Sign in again to continue."));
 
-router.post("/auth/register", async (req, res, next) => {
-  try {
-    const body = z.object({
-      email: z.string().email().max(320),
-      password: z.string().min(8).max(128),
-      display_name: z.string().trim().min(1).max(100).optional(),
-    }).parse(req.body);
-    const { data, error } = await publicSupabase().auth.signUp({
-      email: body.email,
-      password: body.password,
-      options: { data: body.display_name ? { display_name: body.display_name } : undefined },
-    });
-    if (error) throw error;
-    res.status(201).json({
-      success: true,
-      data: { user: data.user, session: data.session },
-      error: null,
-    });
-  } catch (error) { next(error); }
+const demoLoginLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-router.post("/auth/login", async (req, res, next) => {
-  try {
-    const body = z.object({ email: z.string().email(), password: z.string().min(1).max(128) }).parse(req.body);
-    const { data, error } = await publicSupabase().auth.signInWithPassword(body);
-    if (error) throw error;
-    res.json({ success: true, data: { user: data.user, session: data.session }, error: null });
-  } catch (error) { next(error); }
-});
-
-router.post("/auth/logout", requireAuth, async (req, res, next) => {
-  try {
-    const token = req.header("authorization")!.slice(7);
-    const { error } = await publicSupabase().auth.admin.signOut(token, "global");
-    if (error) throw error;
-    res.json({ success: true, data: { logged_out: true }, error: null });
-  } catch (error) { next(error); }
-});
-
-router.post("/auth/password-reset", async (req, res, next) => {
-  try {
-    const body = z.object({ email: z.string().email(), redirect_to: z.string().url().optional() }).parse(req.body);
-    const { error } = await publicSupabase().auth.resetPasswordForEmail(body.email, {
-      redirectTo: body.redirect_to,
-    });
-    if (error) throw error;
-    res.json({ success: true, data: { sent: true }, error: null });
-  } catch (error) { next(error); }
-});
-
-router.get("/auth/me", requireAuth, async (req, res) => {
-  res.json({ success: true, data: req.authUser, error: null });
-});
-
-router.get("/me", requireAuth, async (req, res, next) => {
-  try {
-    const { data, error } = await adminSupabase()
-      .from("profiles")
-      .select("*")
-      .eq("id", req.authUser!.id)
-      .maybeSingle();
-    if (error) throw error;
-    res.json({
-      success: true,
-      data: { id: req.authUser!.id, email: req.authUser!.email ?? null, profile: data ?? null },
-      error: null,
-    });
-  } catch (error) {
-    next(error);
+router.post("/auth/register", databaseUnavailable);
+router.get("/auth/demo-info", (_req, res, next) => {
+  if (!config.demoAuthEnabled) {
+    next(new ApiError(503, "DEMO_AUTH_DISABLED", "Demo authentication is disabled."));
+    return;
   }
+  res.json({
+    success: true,
+    data: { enabled: true, email: "Haris", password: "any non-empty password" },
+    error: null,
+  });
 });
-
-router.patch("/me", requireAuth, async (req, res, next) => {
-  try {
-    const body = z.object({
-      display_name: z.string().trim().min(1).max(100).optional(),
-      avatar_url: z.string().url().max(2048).nullable().optional(),
-    }).parse(req.body);
-    const { data, error } = await adminSupabase()
-      .from("profiles")
-      .upsert({ id: req.authUser!.id, ...body }, { onConflict: "id" })
-      .select("*")
-      .single();
-    if (error) throw error;
-    res.json({ success: true, data, error: null });
-  } catch (error) {
-    next(error);
+const demoLogin = (req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+  if (!config.demoAuthEnabled) {
+    next(new ApiError(503, "DEMO_AUTH_DISABLED", "Demo authentication is disabled."));
+    return;
   }
-});
-
-router.post("/account/delete", requireAuth, async (req, res, next) => {
-  try {
-    const { error } = await adminSupabase().auth.admin.deleteUser(req.authUser!.id);
-    if (error) throw error;
-    res.json({ success: true, data: { deleted: true }, error: null });
-  } catch (error) {
-    next(error);
+  const email = typeof req.body?.email === "string"
+    ? req.body.email.trim()
+    : typeof req.body?.username === "string"
+      ? req.body.username.trim()
+      : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  if (!email) {
+    next(new ApiError(400, "INVALID_USERNAME", "Enter a username."));
+    return;
   }
+  if (!password.trim()) {
+    next(new ApiError(400, "INVALID_PASSWORD", "Enter a password."));
+    return;
+  }
+  const user = { id: "demo-user", email, display_name: "Demo User" };
+  const token = createDemoSession(config.demoAuthSecret, user);
+  res.cookie(DEMO_SESSION_COOKIE, token, {
+    httpOnly: true,
+    secure: config.nodeEnv === "production",
+    sameSite: "lax",
+    maxAge: DEMO_SESSION_MAX_AGE_MS,
+    path: "/",
+  });
+  res.json({ success: true, data: { user }, error: null });
+};
+router.post("/auth/demo/login", demoLoginLimiter, demoLogin);
+router.post("/auth/demo/resume", (req, res, next) => {
+  const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
+  if (!username) {
+    next(new ApiError(400, "INVALID_USERNAME", "Enter a username."));
+    return;
+  }
+  req.body = { ...req.body, email: username, password: "demo-session" };
+  demoLogin(req, res, next);
 });
+router.post("/auth/login", demoLoginLimiter, (req, res, next) => {
+  if (!config.demoAuthEnabled) {
+    databaseUnavailable(req, res, next);
+    return;
+  }
+  demoLogin(req, res, next);
+});
+router.post("/auth/logout", (req, res) => {
+  res.clearCookie(DEMO_SESSION_COOKIE, { httpOnly: true, sameSite: "lax", secure: config.nodeEnv === "production", path: "/" });
+  res.json({ success: true, data: { logged_out: true }, error: null });
+});
+router.post("/auth/password-reset", databaseUnavailable);
+router.get("/auth/me", requireAuth, (req, res) => {
+  res.json({ success: true, data: { user: req.authUser }, error: null });
+});
+router.get("/me", requireAuth);
+router.patch("/me", requireAuth);
+router.post("/account/delete", requireAuth);
 
 export default router;

@@ -1431,11 +1431,13 @@
         const $ = (s, c = document) => c.querySelector(s), $$ = (s, c = document) => [...c.querySelectorAll(s)];
         const toast = t => { const e = document.createElement('div'); e.className = 'ts'; e.textContent = t; $('#toasts').append(e); setTimeout(() => e.remove(), 2600) };
         try {
-            if (window.AlienDemoAuth.getUsername()) {
-                window.location.replace('dashboard.html');
-            } else {
+            window.AlienDemoAuth.refreshSession().then(session => {
+                if (session) {
+                    window.location.replace('dashboard.html');
+                    return;
+                }
                 document.body.classList.remove('demo-auth-pending');
-            }
+            });
         } catch (error) {
             console.error('Could not read the demo login session:', error);
             document.body.classList.remove('demo-auth-pending');
@@ -1474,7 +1476,9 @@
             const t = e.target.closest('[data-open],[data-toast],[data-style],[data-close]'); if (!t) return;
             if (t.matches('a')) e.preventDefault();
             if (t.dataset.open === 'create' || t.dataset.style || t.dataset.prompt) {
-                window.location.assign('login.html');
+                window.AlienDemoAuth.refreshSession().then(session => {
+                    window.location.assign(session ? 'dashboard.html' : 'login.html');
+                });
                 return;
             }
             if (t.dataset.open) {

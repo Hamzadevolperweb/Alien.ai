@@ -37,6 +37,13 @@
         <a href="info.html?page=contact">Contact</a>
         <span>Alien.ai</span>
     </footer>
+    <script src="demo-auth.js"></script>
+    <script>
+        document.querySelector(".nav-cta")?.addEventListener("click", event => {
+            event.preventDefault();
+            window.location.assign(window.AlienDemoAuth.getSession() ? "dashboard.html" : "login.html");
+        });
+    </script>
     <script src="site-info.js"></script>
 </body>
 </html>

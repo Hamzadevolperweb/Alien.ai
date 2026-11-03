@@ -10,8 +10,29 @@ import apiRouter from "./routes/index.js";
 export const app = express();
 
 app.disable("x-powered-by");
-app.use(helmet());
-app.use(cors({ origin: config.frontendUrl, credentials: true }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
+const allowedOrigins = config.frontendUrl.split(",").map(origin => origin.trim()).filter(Boolean);
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(null, false);
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use("/api/generations", rateLimit({
   windowMs: 60_000,

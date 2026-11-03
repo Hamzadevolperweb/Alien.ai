@@ -14,12 +14,9 @@ A TypeScript/Express REST backend for Alien.ai using Supabase Auth, PostgreSQL, 
 ```sh
 npm install
 cp .env.example .env
-# Configure Supabase and provider credentials in .env
-npx supabase db push
+# Configure provider credentials in .env when available
 npm run dev
 ```
-
-Apply [the initial migration](supabase/migrations/202610300001_initial.sql) in the Supabase SQL editor if the Supabase CLI is unavailable. This migration enables private media storage and creates the database schema and row-level security policies.
 
 The default API port is `4000`. Frontend developers should set:
 
